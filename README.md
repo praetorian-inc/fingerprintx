@@ -49,7 +49,7 @@
 # Installation
 From Github
 ```sh
-go install -v github.com/praetorian-inc/fingerprintx/cmd/fingerprintx:latest
+go install -v github.com/praetorian-inc/fingerprintx/cmd/fingerprintx@latest
 ```
 From source (go version > 1.18)
 ```sh
