@@ -24,6 +24,29 @@
 
 ![Fingerprintx Example](static/fingerprintx-usage.png)
 
+* Fast fingerprinting of exposed services
+* Application layer service discovery
+* Plays nicely with other command line tools
+* Automatic metadata collection from identified services, for example:
+```
+$ echo 172.0.0.1:445 | fingerprintx --json | jq
+{
+  “ip”: “172.0.0.1",
+  “port”: 445,
+  “service”: “smb”,
+  “transport”: “tcp”,
+  “metadata”: {
+    “computerName”: “WINDEV01”,
+    “domainName”: “WINDEV01”,
+    “fqdn”: “WINDEV01”,
+    “osVersion”: “6.1.7601",
+    “signingEnabled”: “true”,
+    “signingRequired”: “false”
+  }
+}
+```
+
+## Supported Protocols:
 
 <div align="center">
 
@@ -90,7 +113,7 @@ Usage:
 
 Flags:
       --csv               output format in csv
-  -f, --fast              fastlane mode
+  -f, --fast              fast mode
   -h, --help              help for ./fingerprintx
       --json              output format in json
   -l, --list string       input file containing targets
@@ -101,7 +124,7 @@ Flags:
   -v, --verbose           verbose mode
 ```
 
-The `fastlane` mode will only attempt to fingerprint the default service associated with that port for each target. For example, if `praetorian.com:8443` is the input, only the `https` plugin would be run. If `https` is not running on `praetorian.com:8443`, there will be NO output. Why do this? It's a quick way to fingerprint most of the services in a large list of hosts (think the [80/20 rule](https://en.wikipedia.org/wiki/Pareto_principle)).
+The `fast` mode will only attempt to fingerprint the default service associated with that port for each target. For example, if `praetorian.com:8443` is the input, only the `https` plugin would be run. If `https` is not running on `praetorian.com:8443`, there will be NO output. Why do this? It's a quick way to fingerprint most of the services in a large list of hosts (think the [80/20 rule](https://en.wikipedia.org/wiki/Pareto_principle)).
 
 # Running Fingerprintx
 With one target:

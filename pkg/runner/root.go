@@ -56,7 +56,7 @@ func init() {
 		BoolVarP(&config.outputJSON, "json", "", false, "output format in json")
 	rootCmd.PersistentFlags().BoolVarP(&config.outputCSV, "csv", "", false, "output format in csv")
 
-	rootCmd.PersistentFlags().BoolVarP(&config.fastMode, "fast", "f", false, "fastlane mode")
+	rootCmd.PersistentFlags().BoolVarP(&config.fastMode, "fast", "f", false, "fast mode")
 	rootCmd.PersistentFlags().
 		BoolVarP(&config.useUDP, "udp", "U", false, "run UDP plugins")
 
