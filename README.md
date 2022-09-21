@@ -49,19 +49,7 @@
 # Installation
 From Github
 ```sh
-go install -v github.com/praetorian-inc/fingerprintx/cmd/fingerprintx
-```
-Docker
-```sh
-$ git clone git@github.com:praetorian-inc/fingerprintx.git
-$ cd fingerprintx
-
-# build
-docker build -t fingerprintx .
-
-# and run it
-docker run --rm fingerprintx
-docker run --rm fingerprintx -t praetorian.com:80 --json
+go install -v github.com/praetorian-inc/fingerprintx/cmd/fingerprintx:latest
 ```
 From source (go version > 1.18)
 ```sh
@@ -71,6 +59,19 @@ $ cd fingerprintx
 # with go version > 1.18
 $ go build ./cmd/fingerprintx
 $ ./fingerprintx -h
+```
+
+Docker
+```sh
+$ git clone git@github.com:praetorian-inc/fingerprintx.git
+$ cd fingerprintx
+
+# build
+docker build -t fingerprintx .
+
+# and run it
+docker run --rm fingerprintx -h
+docker run --rm fingerprintx -t praetorian.com:80 --json
 ```
 
 # Usage
