@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -77,45 +78,106 @@ func checkSSH(data []byte) (Info, error) {
 }
 
 func checkAlgo(data []byte) (map[string]string, error) {
+	length := len(data)
+	if length < 26 {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	cookie := hex.EncodeToString(data[6:22])
 
 	kexAlgorithmsLength := int(big.NewInt(0).SetBytes(data[22:26]).Uint64())
+	if length < 26+kexAlgorithmsLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	kexAlgos := string(data[26 : 26+kexAlgorithmsLength])
 
 	sHKAlgoBegin := 26 + kexAlgorithmsLength
+	if length < 4+sHKAlgoBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	sHKAlgoLength := int(big.NewInt(0).SetBytes(data[sHKAlgoBegin : 4+sHKAlgoBegin]).Uint64())
+	if length < 4+sHKAlgoBegin+sHKAlgoLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	serverHostKeyAlgos := string(data[4+sHKAlgoBegin : 4+sHKAlgoBegin+sHKAlgoLength])
 
 	encryptAlgoCToSBegin := 4 + sHKAlgoBegin + sHKAlgoLength
+	if length < 4+encryptAlgoCToSBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	encryptAlgoCToSLength := int(big.NewInt(0).SetBytes(data[encryptAlgoCToSBegin : 4+encryptAlgoCToSBegin]).Uint64())
+	if length < 4+encryptAlgoCToSBegin+encryptAlgoCToSLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	ciphersClientServer := string(data[4+encryptAlgoCToSBegin : 4+encryptAlgoCToSBegin+encryptAlgoCToSLength])
 
 	encryptAlgoSToCBegin := 4 + encryptAlgoCToSBegin + encryptAlgoCToSLength
+	if length < 4+encryptAlgoCToSBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	encryptAlgoSToCLength := int(big.NewInt(0).SetBytes(data[encryptAlgoSToCBegin : 4+encryptAlgoSToCBegin]).Uint64())
+	if length < 4+encryptAlgoCToSBegin+encryptAlgoSToCLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	ciphersServerClient := string(data[4+encryptAlgoSToCBegin : 4+encryptAlgoSToCBegin+encryptAlgoSToCLength])
 
 	macAlgoCToSBegin := 4 + encryptAlgoSToCBegin + encryptAlgoSToCLength
+	if length < 4+macAlgoCToSBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	macAlgoCToSLength := int(big.NewInt(0).SetBytes(data[macAlgoCToSBegin : 4+macAlgoCToSBegin]).Uint64())
+	if length < 4+macAlgoCToSBegin+macAlgoCToSLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	macClientServer := string(data[4+macAlgoCToSBegin : 4+macAlgoCToSBegin+macAlgoCToSLength])
 
 	macAlgoSToCBegin := 4 + macAlgoCToSBegin + macAlgoCToSLength
+	if length < 4+macAlgoSToCBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	macAlgoSToCLength := int(big.NewInt(0).SetBytes(data[macAlgoSToCBegin : 4+macAlgoSToCBegin]).Uint64())
+	if length < 4+macAlgoSToCBegin+macAlgoCToSLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	macServerClient := string(data[4+macAlgoSToCBegin : 4+macAlgoSToCBegin+macAlgoSToCLength])
 
 	compAlgoCToSBegin := 4 + macAlgoSToCBegin + macAlgoSToCLength
+	if length < 4+compAlgoCToSBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	compAlgoCToSLength := int(big.NewInt(0).SetBytes(data[compAlgoCToSBegin : 4+compAlgoCToSBegin]).Uint64())
+	if length < 4+compAlgoCToSBegin+compAlgoCToSLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	compressionClientServer := string(data[4+compAlgoCToSBegin : 4+compAlgoCToSBegin+compAlgoCToSLength])
 
 	compAlgoSToCBegin := 4 + compAlgoCToSBegin + compAlgoCToSLength
+	if length < 4+compAlgoSToCBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	compAlgoSToCLength := int(big.NewInt(0).SetBytes(data[compAlgoSToCBegin : 4+compAlgoSToCBegin]).Uint64())
+	if length < 4+compAlgoSToCBegin+compAlgoSToCLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	compressionServerClient := string(data[4+compAlgoSToCBegin : 4+compAlgoSToCBegin+compAlgoSToCLength])
 
 	langAlgoCToSBegin := 4 + compAlgoSToCBegin + compAlgoSToCLength
+	if length < 4+langAlgoCToSBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	langAlgoCToSLength := int(big.NewInt(0).SetBytes(data[langAlgoCToSBegin : 4+langAlgoCToSBegin]).Uint64())
+	if length < 4+langAlgoCToSBegin+langAlgoCToSLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	languagesClientServer := string(data[4+langAlgoCToSBegin : 4+langAlgoCToSBegin+langAlgoCToSLength])
 
 	langAlgoSToCBegin := 4 + langAlgoCToSBegin + langAlgoCToSLength
+	if length < 4+langAlgoCToSBegin {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	langAlgoSToCLength := int(big.NewInt(0).SetBytes(data[langAlgoSToCBegin : 4+langAlgoSToCBegin]).Uint64())
+	if length < 4+langAlgoCToSBegin+langAlgoSToCLength {
+		return nil, fmt.Errorf("invalid response length")
+	}
 	languagesServerClient := string(data[4+langAlgoSToCBegin : 4+langAlgoSToCBegin+langAlgoSToCLength])
 
 	info := map[string]string{
@@ -146,7 +208,7 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	banner, err := checkSSH(response)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	msg := []byte("SSH-2.0-Fingerprintx-SSH2\r\n")
@@ -155,9 +217,7 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 	if err != nil {
 		return nil, err
 	}
-	if len(response) == 0 {
-		return nil, nil
-	}
+
 	algo, err := checkAlgo(response)
 	if err != nil {
 		return &plugins.PluginResults{
