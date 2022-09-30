@@ -28,6 +28,10 @@
 * Plays nicely with other command line tools
 * Automatic metadata collection from identified services
 
+
+https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-b7b8-83255af41a8b.mov
+
+
 ![Fingerprintx Example](static/fingerprintx-usage.png)
 
 ![Fingerprintx Chain Example](static/fingerprintx-chain.png)
