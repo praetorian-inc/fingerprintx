@@ -27,7 +27,7 @@ import (
 
 var inputFile string
 
-func readTargets(inputFile string) ([]netip.AddrPort, error) {
+func readTargets(inputFile string, verbose bool) ([]netip.AddrPort, error) {
 	targetsList := make([]netip.AddrPort, 0)
 	var readFile *os.File
 	if len(inputFile) == 0 && len(targetList) == 0 {
@@ -41,8 +41,8 @@ func readTargets(inputFile string) ([]netip.AddrPort, error) {
 			parsedTarget, err := parseTarget(target)
 			if err == nil {
 				targetsList = append(targetsList, parsedTarget)
-			} else {
-				fmt.Printf("errored")
+			} else if verbose {
+				fmt.Printf("%s\n", err)
 			}
 		}
 	} else {
@@ -59,6 +59,8 @@ func readTargets(inputFile string) ([]netip.AddrPort, error) {
 		parsedTarget, err := parseTarget(scanner.Text())
 		if err == nil {
 			targetsList = append(targetsList, parsedTarget)
+		} else if verbose {
+			fmt.Printf("%s\n", err)
 		}
 	}
 	return targetsList, nil
@@ -67,22 +69,23 @@ func readTargets(inputFile string) ([]netip.AddrPort, error) {
 func parseTarget(inputTarget string) (netip.AddrPort, error) {
 	target := strings.Split(strings.TrimSpace(inputTarget), ":")
 	if len(target) != 2 {
-		return netip.AddrPort{}, fmt.Errorf("invalid")
+		return netip.AddrPort{}, fmt.Errorf("invalid target: %s", inputTarget)
 	}
 
 	hostStr, portStr := target[0], target[1]
 
 	port, err := strconv.ParseUint(portStr, 10, 16)
 	if err != nil {
-		return netip.AddrPort{}, fmt.Errorf("invalid")
+		return netip.AddrPort{}, fmt.Errorf("invalid port specified")
 	}
 
 	ip := net.ParseIP(hostStr)
 	var isHostname = false
 	if ip == nil {
-		addrs, err := net.LookupIP(hostStr)
+		var addrs []net.IP
+		addrs, err = net.LookupIP(hostStr)
 		if err != nil {
-			return netip.AddrPort{}, fmt.Errorf("invalid")
+			return netip.AddrPort{}, err
 		}
 		isHostname = true
 		ip = addrs[0]
@@ -96,7 +99,7 @@ func parseTarget(inputTarget string) (netip.AddrPort, error) {
 
 	addr, ok := netip.AddrFromSlice(ip)
 	if !ok {
-		return netip.AddrPort{}, fmt.Errorf("invalid")
+		return netip.AddrPort{}, fmt.Errorf("invalid ip address specified %s", err)
 	}
 	targetAddr := netip.AddrPortFrom(addr, uint16(port))
 
