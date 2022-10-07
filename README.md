@@ -106,15 +106,20 @@ fingerprintx -h
 The `-h` option will display all of the supported flags for `fingerprintx`.
 
 ```sh
-A utility for service fingerprinting
-
 Usage:
-  ./fingerprintx [flags]
+  fingerprintx [flags]
+TARGET SPECIFICATION:
+	Requires a host and port number or ip and port number. The port is assumed to be open.
+	HOST:PORT or IP:PORT
+EXAMPLES:
+	fingerprintx -t praetorian.com:80
+	fingerprintx -l input-file.txt
+	fingerprintx --json -t praetorian.com:80,127.0.0.1:8000
 
 Flags:
       --csv               output format in csv
   -f, --fast              fast mode
-  -h, --help              help for ./fingerprintx
+  -h, --help              help for fingerprintx
       --json              output format in json
   -l, --list string       input file containing targets
   -o, --output string     output file
