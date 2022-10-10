@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Documentation on this file structure: https://goreleaser.com
+project_name: fingerprintx
 before:
   hooks:
   - go mod download
@@ -25,8 +26,10 @@ builds:
   goos:
   - linux
   - darwin
+  - windows
   goarch:
   - amd64
+  - arm64
 changelog:
   # skip changelog generation for now
   skip: true
