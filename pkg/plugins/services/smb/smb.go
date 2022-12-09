@@ -295,9 +295,11 @@ func DetectSMBv2(conn net.Conn, timeout time.Duration) (*map[string]any, error) 
 
 	// Parse: TargetInfo
 	AvIDMap := map[uint16]string{
-		1: "computerName",
-		2: "domainName",
-		3: "fqdn", // DNS Computer Name
+		1: "netbiosComputerName",
+		2: "netbiosDomainName",
+		3: "dnsComputerName",
+		4: "dnsDomainName",
+		5: "forestName", // MsvAvDnsTreeName
 	}
 	type AVPair struct {
 		AvID  uint16
