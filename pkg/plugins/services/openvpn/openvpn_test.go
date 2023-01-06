@@ -23,7 +23,6 @@ import (
 )
 
 func TestOpenVPN(t *testing.T) {
-
 	// the Privileged container does not run on Github actions -- but this test passes locally
 	testcases := []test.Testcase{
 		// 	{

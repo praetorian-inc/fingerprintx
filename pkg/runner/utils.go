@@ -61,7 +61,6 @@ func checkConfig(config cliConfig) error {
 }
 
 func createScanConfig(config cliConfig) scan.Config {
-
 	var protocol = plugins.TCP
 	if config.useUDP {
 		protocol = plugins.UDP
