@@ -61,10 +61,6 @@ func checkConfig(config cliConfig) error {
 }
 
 func createScanConfig(config cliConfig) scan.Config {
-	var runMode = scan.Default
-	if config.fastMode {
-		runMode = scan.Fast
-	}
 
 	var protocol = plugins.TCP
 	if config.useUDP {
@@ -72,16 +68,11 @@ func createScanConfig(config cliConfig) scan.Config {
 	}
 
 	return scan.Config{
-		Speed:                    runMode,
-		DefaultTimeout:           time.Duration(config.timeout) * time.Millisecond,
-		TargetProtocol:           protocol,
-		FastlaneMode:             config.fastMode,
-		MaxConcurrentConnections: config.maxConcurrentConnections,
-		PacketsPerSecond:         config.packetsPerSecond,
-		BitsPerSecond:            config.bitsPerSecond,
-		ReportPluginErrors:       config.showErrors,
-		UDP:                      config.useUDP,
-		Verbose:                  config.verbose,
+		DefaultTimeout: time.Duration(config.timeout) * time.Millisecond,
+		TargetProtocol: protocol,
+		FastMode:       config.fastMode,
+		UDP:            config.useUDP,
+		Verbose:        config.verbose,
 	}
 }
 
