@@ -55,7 +55,7 @@ func ScanTargets(targets []netip.AddrPort, config Config) ([]ReportedResult, err
 	}
 
 	// done with fastlane mode, return
-	if config.FastlaneMode {
+	if config.FastMode {
 		return results, nil
 	}
 

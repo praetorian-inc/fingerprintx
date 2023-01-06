@@ -34,9 +34,8 @@ type pluginPanicError struct {
 
 func (w *pluginPanicError) Error() string {
 	return fmt.Sprintf(
-		"Plugin %v panicked on target %v: %v",
+		"Plugin %v panicked: %v",
 		plugins.CreatePluginID(w.plugin),
-		w.config.Target,
 		w.err,
 	)
 }
