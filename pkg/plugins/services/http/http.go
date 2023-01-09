@@ -18,23 +18,34 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"syscall"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
+
+	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 )
 
-type HTTPPlugin struct{}
-type HTTPSPlugin struct{}
+type HTTPPlugin struct {
+	analyzer *wappalyzer.Wappalyze
+}
+type HTTPSPlugin struct {
+	analyzer *wappalyzer.Wappalyze
+}
 
 const HTTP = "http"
 const HTTPS = "https"
 
 func init() {
-	plugins.RegisterPlugin(&HTTPPlugin{})
-	plugins.RegisterPlugin(&HTTPSPlugin{})
+	wappalyzerClient, err := wappalyzer.New()
+	if err != nil {
+		panic("unable to initialize wappalyzer library")
+	}
+	plugins.RegisterPlugin(&HTTPPlugin{analyzer: wappalyzerClient})
+	plugins.RegisterPlugin(&HTTPSPlugin{analyzer: wappalyzerClient})
 }
 
 var (
@@ -96,10 +107,16 @@ func (p *HTTPPlugin) Run(
 		return nil, &utils.RequestError{Message: err.Error()}
 	}
 	defer resp.Body.Close()
+
+	technologies, _ := p.FingerprintResponse(resp)
+
 	info := map[string]any{
 		"status":          resp.Status,
 		"statusCode":      resp.StatusCode,
 		"responseHeaders": resp.Header,
+	}
+	if len(technologies) > 0 {
+		info["technologies"] = technologies
 	}
 	version := resp.Header.Get("Server")
 	if version != "" {
@@ -145,10 +162,15 @@ func (p *HTTPSPlugin) Run(
 	}
 	defer resp.Body.Close()
 
+	technologies, _ := p.FingerprintResponse(resp)
+
 	info := map[string]any{
 		"status":          resp.Status,
 		"statusCode":      resp.StatusCode,
 		"responseHeaders": resp.Header,
+	}
+	if len(technologies) > 0 {
+		info["technologies"] = technologies
 	}
 	version := resp.Header.Get("Server")
 	if version != "" {
@@ -180,4 +202,26 @@ func (p *HTTPPlugin) Name() string {
 
 func (p *HTTPSPlugin) Name() string {
 	return HTTPS
+}
+
+func (p *HTTPPlugin) FingerprintResponse(resp *http.Response) ([]string, error) {
+	return fingerprint(resp, p.analyzer)
+}
+
+func (p *HTTPSPlugin) FingerprintResponse(resp *http.Response) ([]string, error) {
+	return fingerprint(resp, p.analyzer)
+}
+
+func fingerprint(resp *http.Response, analyzer *wappalyzer.Wappalyze) ([]string, error) {
+	var technologies []string
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	fingerprint := analyzer.Fingerprint(resp.Header, data)
+	for tech := range fingerprint {
+		technologies = append(technologies, tech)
+	}
+
+	return technologies, nil
 }
