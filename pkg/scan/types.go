@@ -22,9 +22,6 @@ import (
 )
 
 type Config struct {
-	// IP, UDP, TCP, or TCPTLS
-	TargetProtocol plugins.Protocol
-
 	// UDP scan
 	UDP bool
 

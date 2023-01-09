@@ -61,14 +61,8 @@ func checkConfig(config cliConfig) error {
 }
 
 func createScanConfig(config cliConfig) scan.Config {
-	var protocol = plugins.TCP
-	if config.useUDP {
-		protocol = plugins.UDP
-	}
-
 	return scan.Config{
 		DefaultTimeout: time.Duration(config.timeout) * time.Millisecond,
-		TargetProtocol: protocol,
 		FastMode:       config.fastMode,
 		UDP:            config.useUDP,
 		Verbose:        config.verbose,
