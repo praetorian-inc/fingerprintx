@@ -17,6 +17,7 @@ package rsync
 import (
 	"net"
 	"strings"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -50,9 +51,7 @@ func (p *RSYNCPlugin) PortPriority(port uint16) bool {
    This program was tested with docker run -p 873:873 vimagick/rsyncd
    The default port for rsyncd is 873
 */
-func (p *RSYNCPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	timeout := config.Timeout
-
+func (p *RSYNCPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	requestBytes := []byte{
 		// ascii "@RSYNCD:" magic header
 		0x40, 0x52, 0x53, 0x59, 0x54, 0x43, 0x44, 0x3a,
@@ -74,10 +73,7 @@ func (p *RSYNCPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.
 
 	if string(response[:RsyncMagicHeaderLength]) == "@RSYNCD:" {
 		version := strings.Split(string(response[RsyncMagicHeaderLength+1:]), "\n")[0]
-		info := map[string]any{
-			"version": version,
-		}
-		return &plugins.PluginResults{Info: info}, nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceRsync{}, false, version), nil
 	}
 
 	return nil, nil

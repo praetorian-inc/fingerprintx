@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -32,7 +33,7 @@ func init() {
 	plugins.RegisterPlugin(&Plugin{})
 }
 
-func (f *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (f *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	initiator := make([]byte, 8)
 	_, err := rand.Read(initiator)
 	if err != nil {
@@ -95,7 +96,7 @@ func (f *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 		0x00, 0x00, 0x70, 0x80,
 	}...)
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +107,12 @@ func (f *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 	responderISP := hex.EncodeToString(response[8:16])
 	messageID := hex.EncodeToString(response[20:24])
 	if bytes.Equal(initiator, response[0:8]) {
-		info := map[string]any{"responderISP": responderISP, "messageID": messageID}
-		return &plugins.PluginResults{Info: info}, nil
+		payload := plugins.ServiceIPSEC{
+			ResponderISP: responderISP,
+			MessageID:    messageID,
+		}
+
+		return plugins.CreateServiceFrom(target, payload, false, ""), nil
 	}
 	return nil, nil
 }

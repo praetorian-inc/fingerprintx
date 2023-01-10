@@ -17,6 +17,7 @@ package telnet
 import (
 	"encoding/hex"
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -267,8 +268,8 @@ func (p *TELNETPlugin) PortPriority(port uint16) bool {
 	return port == 23
 }
 
-func (p *TELNETPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	response, err := utils.Recv(conn, config.Timeout)
+func (p *TELNETPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	response, err := utils.Recv(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -279,8 +280,10 @@ func (p *TELNETPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins
 	if err := isTelnet(response); err != nil {
 		return nil, nil
 	}
-	return &plugins.PluginResults{
-		Info: map[string]any{"serverData": hex.EncodeToString(response)}}, nil
+	payload := plugins.ServiceTelnet{
+		ServerData: hex.EncodeToString(response),
+	}
+	return plugins.CreateServiceFrom(target, payload, false, ""), nil
 }
 
 func (p *TELNETPlugin) Name() string {

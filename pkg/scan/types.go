@@ -15,7 +15,6 @@
 package scan
 
 import (
-	"net/netip"
 	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
@@ -39,12 +38,4 @@ type Config struct {
 
 	// Prints logging messages to stderr
 	Verbose bool
-}
-
-// either Results or Error will be nil
-type ReportedResult struct {
-	Addr    netip.AddrPort
-	Plugin  plugins.Plugin
-	Results *plugins.PluginResults
-	Error   error
 }

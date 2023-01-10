@@ -17,13 +17,12 @@ package runner
 import (
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/praetorian-inc/fingerprintx/pkg/scan"
+	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 )
 
 type outputFormat string
@@ -34,17 +33,7 @@ const (
 	DEFAULT outputFormat = "DEFAULT"
 )
 
-type dataEntry struct {
-	Host      string         `json:"host,omitempty"`
-	IP        string         `json:"ip"`
-	Port      uint16         `json:"port"`
-	Service   string         `json:"service"`
-	Transport string         `json:"transport"`
-	Metadata  map[string]any `json:"metadata,omitempty"`
-	Error     string         `json:"error,omitempty"`
-}
-
-func Report(results []scan.ReportedResult) error {
+func Report(results []plugins.Service) error {
 	var writeFile *os.File
 	var outputFormat = DEFAULT
 	var csvWriter *csv.Writer
@@ -80,76 +69,22 @@ func Report(results []scan.ReportedResult) error {
 	}
 
 	for _, result := range results {
-		if (result.Results == nil) == (result.Error == nil) {
-			panic("PluginResults must have non-nil value for either Results or Error field")
-		}
-
-		host := hostMapping[result.Addr]
-		data := dataEntry{
-			Host:      host,
-			Port:      result.Addr.Port(),
-			IP:        result.Addr.Addr().String(),
-			Service:   result.Plugin.Name(),
-			Transport: strings.ToLower(result.Plugin.Type().String()),
-		}
-		if result.Results != nil {
-			data.Metadata = result.Results.Info
-		}
-		if config.showErrors && result.Error != nil {
-			data.Error = result.Error.Error()
-			if data.Error == "" {
-				data.Error = "Unknown error occurred with no error message."
-			}
-		}
-
-		displayedHost := data.IP
-		if data.Host != "" {
-			displayedHost = data.Host
-		}
-
 		switch outputFormat {
 		case JSON:
-			if data.Error == "" || (data.Error != "" && config.showErrors) {
-				var jsonErr error
-				jsonData, jsonErr := json.Marshal(data)
-				if jsonErr != nil {
-					return jsonErr
-				}
-				log.Println(string(jsonData))
+			data, err := json.Marshal(result)
+			if err != nil {
+				return err
 			}
+			log.Println(string(data))
 		case CSV:
-			portStr := strconv.FormatInt(int64(data.Port), 10)
-			if config.showErrors {
-				if data.Error != "" {
-					err = csvWriter.Write(
-						[]string{data.Host, portStr, data.Service, "", data.Error},
-					)
-				} else {
-					err = csvWriter.Write([]string{displayedHost, portStr, data.Service, fmt.Sprint(data.Metadata), ""})
-				}
-			} else {
-				if data.Error == "" {
-					err = csvWriter.Write([]string{displayedHost, portStr, data.Service, fmt.Sprint(data.Metadata)})
-				}
-			}
+			portStr := strconv.FormatInt(int64(result.Port), 10)
+			err = csvWriter.Write([]string{result.Host, result.IP, portStr, result.Protocol, strconv.FormatBool(result.TLS), string(result.Raw)})
 			if err != nil {
 				return err
 			}
 			csvWriter.Flush()
 		default:
-			if data.Error != "" {
-				if config.showErrors {
-					log.Printf(
-						"[ERROR]: Scanning %s:%d for %s: %s\n",
-						displayedHost,
-						data.Port,
-						strings.ToLower(data.Service),
-						data.Error,
-					)
-				}
-			} else {
-				log.Printf("%s://%s:%d\n", strings.ToLower(data.Service), displayedHost, data.Port)
-			}
+			log.Printf("%s://%s:%d (%s)\n", strings.ToLower(result.Protocol), result.IP, result.Port, result.Host)
 		}
 	}
 	return nil

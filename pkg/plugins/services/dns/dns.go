@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -33,7 +34,7 @@ func init() {
 	plugins.RegisterPlugin(&TCPPlugin{})
 }
 
-func (p *UDPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p *UDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	transactionID := make([]byte, 2)
 	_, err := rand.Read(transactionID)
 	if err != nil {
@@ -51,7 +52,7 @@ func (p *UDPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 		0x00, 0x03, // Class: CH (0x0003)
 	}...)
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +64,12 @@ func (p *UDPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 		if len(response) > 42 {
 			responseLen := response[42]
 			responseTXT := string(response[43 : 43+responseLen])
-			return &plugins.PluginResults{Info: map[string]any{"response": responseTXT}}, nil
+			payload := plugins.ServiceDNS{
+				ResponseTXT: responseTXT,
+			}
+			return plugins.CreateServiceFrom(target, payload, false, ""), nil
 		}
-		return &plugins.PluginResults{}, nil
+		return nil, nil
 	}
 	return nil, nil
 }
@@ -82,7 +86,7 @@ func (p *UDPPlugin) Type() plugins.Protocol {
 	return plugins.UDP
 }
 
-func (p TCPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p TCPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	transactionID := make([]byte, 2)
 	_, err := rand.Read(transactionID)
 	if err != nil {
@@ -101,7 +105,7 @@ func (p TCPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plu
 	}...)
 	InitialConnectionPackage = append([]byte{0x00, 0x1e}, InitialConnectionPackage...)
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +117,12 @@ func (p TCPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plu
 		if len(response) > 42 {
 			responseLen := response[42]
 			responseTXT := string(response[43 : 43+responseLen])
-			return &plugins.PluginResults{Info: map[string]any{"response": responseTXT}}, nil
+			payload := plugins.ServiceDNS{
+				ResponseTXT: responseTXT,
+			}
+			return plugins.CreateServiceFrom(target, payload, false, ""), nil
 		}
-		return &plugins.PluginResults{}, nil
+		return nil, nil
 	}
 	return nil, nil
 }

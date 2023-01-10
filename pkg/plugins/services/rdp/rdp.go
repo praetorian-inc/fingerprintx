@@ -328,31 +328,29 @@ func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, 
 	return info, true, nil
 }
 
-func (p *RDPPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	fingerprint, check, err := DetectRDP(conn, config.Timeout)
+func (p *RDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	fingerprint, check, err := DetectRDP(conn, timeout)
 	if check && err != nil {
 		return nil, nil
 	} else if check && err == nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"OSFingerprint": fingerprint},
-		}, nil
+		payload := plugins.ServiceRDP{
+			OSFingerprint: fingerprint,
+		}
+		return plugins.CreateServiceFrom(target, payload, false, ""), nil
 	} else {
 		return nil, err
 	}
 }
 
-func (p *TLSPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	info, check, err := DetectRDPAuth(conn, config.Timeout)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	info, check, err := DetectRDPAuth(conn, timeout)
 	if check && err != nil {
 		return nil, nil
 	} else if check && err == nil {
-		return &plugins.PluginResults{Info: info}, nil
+		payload := plugins.ServiceRDP{
+			Info: fmt.Sprintf("%s", info),
+		}
+		return plugins.CreateServiceFrom(target, payload, true, ""), nil
 	} else {
 		return nil, err
 	}

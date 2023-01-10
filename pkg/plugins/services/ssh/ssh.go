@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -197,8 +198,8 @@ func checkAlgo(data []byte) (map[string]string, error) {
 	return info, nil
 }
 
-func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	response, err := utils.Recv(conn, config.Timeout)
+func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	response, err := utils.Recv(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -213,15 +214,16 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	msg := []byte("SSH-2.0-Fingerprintx-SSH2\r\n")
 
-	response, err = utils.SendRecv(conn, msg, config.Timeout)
+	response, err = utils.SendRecv(conn, msg, timeout)
 	if err != nil {
 		return nil, err
 	}
 
 	algo, err := checkAlgo(response)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"Banner": banner.Info}}, nil
+		return nil, nil
+		//return &plugins.PluginResults{
+		//	Info: map[string]any{"Banner": banner.Info}}, nil
 	}
 
 	sshConfig := &ssh.ClientConfig{}
@@ -242,8 +244,9 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 	}
 	_, err = io.ReadFull(rand.Reader, sendMsg.Cookie[:])
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		return nil, nil
+		//return &plugins.PluginResults{
+		//	Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
 	}
 	if firstKeyExchange := t.SessionID == nil; firstKeyExchange {
 		sendMsg.KexAlgos = make([]string, 0, len(t.Config.KeyExchanges)+1)
@@ -256,8 +259,9 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	err = ssh.PushPacket(t.HandshakeTransport, packetCopy)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		return nil, nil
+		//return &plugins.PluginResults{
+		//	Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
 	}
 
 	cookie, err := hex.DecodeString(algo["cookie"])
@@ -265,8 +269,9 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 	copy(ret[:], cookie)
 
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"Banner": banner.Info, "Algorithm": algo}}, nil
+		//eturn &plugins.PluginResults{
+		//Info: map[string]any{"Banner": banner.Info, "Algorithm": algo}}, nil
+		return nil, nil
 	}
 	otherInit := &ssh.KexInitMsg{
 		KexAlgos:                strings.Split(algo["KexAlgos"], ","),
@@ -284,8 +289,9 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	t.Algorithms, err = ssh.FindAgreedAlgorithms(false, &sendMsg, otherInit)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		return nil, nil
+		//return &plugins.PluginResults{
+		//	Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
 	}
 	magics := ssh.HandshakeMagics{
 		ClientVersion: t.ClientVersion,
@@ -298,13 +304,15 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	result, err := ssh.Clients(t, kex, &magics)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		return nil, nil
+		//return &plugins.PluginResults{
+		//	Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
 	}
 	hostKey, err := ssh.ParsePublicKey(result.HostKey)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		return nil, nil
+		//return &plugins.PluginResults{
+		//	Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
 	}
 	fingerprint := ssh.FingerprintSHA256(hostKey)
 	base64HostKey := base64.StdEncoding.EncodeToString(result.HostKey)
@@ -314,13 +322,15 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 		"type":          hostKey.Type(),
 		"fingerprint":   fingerprint,
 	}
+	fmt.Printf("%v\n", hostKeyData)
 
-	return &plugins.PluginResults{
-		Info: map[string]any{
-			"banner":    banner.Info,
-			"algorithm": algo,
-			"hostKey":   hostKeyData,
-		}}, nil
+	//return &plugins.PluginResults{
+	//	Info: map[string]any{
+	//		"banner":    banner.Info,
+	//		"algorithm": algo,
+	//		"hostKey":   hostKeyData,
+	//	}}, nil
+	return nil, nil
 }
 
 func (p *SSHPlugin) Name() string {

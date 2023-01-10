@@ -69,25 +69,22 @@ func init() {
 	plugins.RegisterPlugin(&RPCPlugin{})
 }
 
-func (p *RPCPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
+func (p *RPCPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	lookupResponse := RPCLookup{}
 
-	check, err := DetectRPCInfoService(conn, &lookupResponse, config.Timeout)
+	check, err := DetectRPCInfoService(conn, &lookupResponse, timeout)
 	if check && err != nil {
 		return nil, nil
 	}
 	if err == nil {
 		rpcInfo, rpcErr := json.Marshal(lookupResponse)
 		if rpcErr != nil {
-			info := map[string]any{
-				"RPCInfo": string(rpcInfo),
+			payload := plugins.ServiceRPC{
+				Info: string(rpcInfo),
 			}
-			return &plugins.PluginResults{Info: info}, nil
+			return plugins.CreateServiceFrom(target, payload, false, ""), nil
 		}
-		return &plugins.PluginResults{}, nil
+		return nil, nil
 	}
 	return nil, err
 }

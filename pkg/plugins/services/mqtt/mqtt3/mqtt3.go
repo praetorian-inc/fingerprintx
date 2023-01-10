@@ -49,8 +49,8 @@ func testConnectRequest(conn net.Conn, requestBytes []byte, timeout time.Duratio
 	return true, &utils.InvalidResponseError{Service: MQTT}
 }
 
-func (p *MQTT3Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	return Run(conn, config.Timeout)
+func (p *MQTT3Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return Run(conn, timeout, false, target)
 }
 
 func (p *MQTT3Plugin) PortPriority(i uint16) bool {
@@ -65,8 +65,8 @@ func (p *MQTT3Plugin) Type() plugins.Protocol {
 	return plugins.TCP
 }
 
-func (p *TLSPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	return Run(conn, config.Timeout)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return Run(conn, timeout, true, target)
 }
 
 func (p *TLSPlugin) PortPriority(i uint16) bool {
@@ -107,7 +107,7 @@ func (p *TLSPlugin) Type() plugins.Protocol {
    presence/absence of this byte is used to determine if MQTT is present.
 */
 
-func Run(conn net.Conn, timeout time.Duration) (*plugins.PluginResults, error) {
+func Run(conn net.Conn, timeout time.Duration, tls bool, target plugins.Target) (*plugins.Service, error) {
 	// version 3.1.x connect command
 	mqttConnect3 := []byte{
 		// message type 1 + 4 bits reserved
@@ -132,7 +132,7 @@ func Run(conn net.Conn, timeout time.Duration) (*plugins.PluginResults, error) {
 
 	check, err := testConnectRequest(conn, mqttConnect3, timeout)
 	if check && err == nil {
-		return &plugins.PluginResults{Info: map[string]any{"version": "3.1.x"}}, nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceMQTT{}, tls, "3.1.x"), nil
 	} else if check && err != nil {
 		return nil, nil
 	}

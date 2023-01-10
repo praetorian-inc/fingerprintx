@@ -16,7 +16,6 @@ package runner
 
 import (
 	"fmt"
-	"net/netip"
 	"os"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/scan"
@@ -24,11 +23,10 @@ import (
 )
 
 var (
-	config      cliConfig
-	hostMapping map[netip.AddrPort]string
-	targetList  []string
-	userInput   string
-	rootCmd     = &cobra.Command{
+	config     cliConfig
+	targetList []string
+	userInput  string
+	rootCmd    = &cobra.Command{
 		Use: "fingerprintx [flags]\nTARGET SPECIFICATION:\n\tRequires a host and port number or ip and port number. " +
 			"The port is assumed to be open.\n\tHOST:PORT or IP:PORT\nEXAMPLES:\n\tfingerprintx -t praetorian.com:80\n" +
 			"\tfingerprintx -l input-file.txt\n\tfingerprintx --json -t praetorian.com:80,127.0.0.1:8000",
@@ -38,7 +36,6 @@ var (
 				return configErr
 			}
 
-			hostMapping = make(map[netip.AddrPort]string)
 			targetsList, err := readTargets(inputFile, config.verbose)
 			if err != nil {
 				return err

@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"syscall"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -77,10 +78,7 @@ func (p *HTTPPlugin) PortPriority(port uint16) bool {
 	return ok
 }
 
-func (p *HTTPPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
+func (p *HTTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s", conn.RemoteAddr().String()), nil)
 	if err != nil {
 		if errors.Is(err, syscall.ECONNREFUSED) {
@@ -89,9 +87,13 @@ func (p *HTTPPlugin) Run(
 		return nil, &utils.RequestError{Message: err.Error()}
 	}
 
+	if target.Host != "" {
+		req.Host = target.Host
+	}
+
 	// http client with custom dialier to use the provided net.Conn
 	client := http.Client{
-		Timeout: config.Timeout,
+		Timeout: timeout,
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return conn, nil
@@ -110,20 +112,16 @@ func (p *HTTPPlugin) Run(
 
 	technologies, _ := p.FingerprintResponse(resp)
 
-	info := map[string]any{
-		"status":          resp.Status,
-		"statusCode":      resp.StatusCode,
-		"responseHeaders": resp.Header,
+	payload := plugins.ServiceHTTP{
+		Status:          resp.Status,
+		StatusCode:      resp.StatusCode,
+		ResponseHeaders: resp.Header,
 	}
 	if len(technologies) > 0 {
-		info["technologies"] = technologies
-	}
-	version := resp.Header.Get("Server")
-	if version != "" {
-		info["version"] = version
+		payload.Technologies = technologies
 	}
 
-	return &plugins.PluginResults{Info: info}, nil
+	return plugins.CreateServiceFrom(target, payload, false, resp.Header.Get("Server")), nil
 }
 
 func (p *HTTPSPlugin) PortPriority(port uint16) bool {
@@ -133,8 +131,9 @@ func (p *HTTPSPlugin) PortPriority(port uint16) bool {
 
 func (p *HTTPSPlugin) Run(
 	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
+	timeout time.Duration,
+	target plugins.Target,
+) (*plugins.Service, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", conn.RemoteAddr().String()), nil)
 	if err != nil {
 		if errors.Is(err, syscall.ECONNREFUSED) {
@@ -143,9 +142,13 @@ func (p *HTTPSPlugin) Run(
 		return nil, &utils.RequestError{Message: err.Error()}
 	}
 
+	if target.Host != "" {
+		req.Host = target.Host
+	}
+
 	// https client with custom dialer to use the provided net.Conn
 	client := http.Client{
-		Timeout: config.Timeout,
+		Timeout: timeout,
 		Transport: &http.Transport{
 			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return conn, nil
@@ -164,20 +167,16 @@ func (p *HTTPSPlugin) Run(
 
 	technologies, _ := p.FingerprintResponse(resp)
 
-	info := map[string]any{
-		"status":          resp.Status,
-		"statusCode":      resp.StatusCode,
-		"responseHeaders": resp.Header,
+	payload := plugins.ServiceHTTP{
+		Status:          resp.Status,
+		StatusCode:      resp.StatusCode,
+		ResponseHeaders: resp.Header,
 	}
 	if len(technologies) > 0 {
-		info["technologies"] = technologies
-	}
-	version := resp.Header.Get("Server")
-	if version != "" {
-		info["version"] = version
+		payload.Technologies = technologies
 	}
 
-	return &plugins.PluginResults{Info: info}, nil
+	return plugins.CreateServiceFrom(target, payload, true, resp.Header.Get("Server")), nil
 }
 
 func (p *HTTPPlugin) Type() plugins.Protocol {

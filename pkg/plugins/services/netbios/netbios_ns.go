@@ -18,6 +18,7 @@ import (
 	"crypto/rand"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -31,7 +32,7 @@ func init() {
 	plugins.RegisterPlugin(&Plugin{})
 }
 
-func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	transactionID := make([]byte, 2)
 	_, err := rand.Read(transactionID)
 	if err != nil {
@@ -48,7 +49,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 		0x00, 0x01,
 	}...)
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -58,11 +59,13 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 
 	stringBegin := strings.Index(string(response), "\x00\x00\x00\x00\x00") + 7
 	stringEnd := strings.Index(string(response), "\x20\x20\x20")
-	if stringBegin == -1 || stringEnd == -1 || stringEnd < stringBegin {
+	if stringBegin == -1 || stringEnd == -1 || stringEnd < stringBegin || stringBegin >= len(response) || stringEnd >= len(response) {
 		return nil, nil
 	}
-	info := map[string]any{"netBIOSName": string(response[stringBegin:stringEnd])}
-	return &plugins.PluginResults{Info: info}, nil
+	payload := plugins.ServiceNetbios{
+		NetBIOSName: string(response[stringBegin:stringEnd]),
+	}
+	return plugins.CreateServiceFrom(target, payload, false, ""), nil
 }
 
 func (p *Plugin) PortPriority(i uint16) bool {

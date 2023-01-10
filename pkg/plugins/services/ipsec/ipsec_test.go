@@ -28,7 +28,7 @@ func TestIPSEC(t *testing.T) {
 			Description: "ipsec",
 			Port:        500,
 			Protocol:    plugins.UDP,
-			Expected: func(res *plugins.PluginResults) bool {
+			Expected: func(res *plugins.Service) bool {
 				return res != nil
 			},
 			RunConfig: dockertest.RunOptions{
@@ -43,13 +43,12 @@ func TestIPSEC(t *testing.T) {
 	}
 
 	var p *Plugin
-	var config plugins.PluginConfig
 
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			err := test.RunTest(t, tc, p, config)
+			err := test.RunTest(t, tc, p)
 			if err != nil {
 				t.Errorf(err.Error())
 			}

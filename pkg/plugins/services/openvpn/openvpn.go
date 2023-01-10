@@ -18,6 +18,7 @@ import (
 	"crypto/rand"
 	"net"
 	"reflect"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -31,7 +32,7 @@ func init() {
 	plugins.RegisterPlugin(&Plugin{})
 }
 
-func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	/**
 	 * https://build.openvpn.net/doxygen/ssl__pkt_8h_source.html
 	 * https://openvpn.net/community-resources/openvpn-protocol/
@@ -59,7 +60,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 		return nil, &utils.RandomizeError{Message: "session ID"}
 	}
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 				response[i:i+SessionIDLength],
 				InitialConnectionPackage[1:1+SessionIDLength],
 			) {
-				return &plugins.PluginResults{}, nil
+				return plugins.CreateServiceFrom(target, plugins.ServiceOpenVPN{}, false, ""), nil
 			}
 		}
 	}

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -31,7 +32,7 @@ func init() {
 	plugins.RegisterPlugin(&SNMPPlugin{})
 }
 
-func (f *SNMPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (f *SNMPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	RequestID := []byte{0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x01, 0x00}
 	InitialConnectionPackage := []byte{
 		0x30, 0x29, // package length
@@ -48,7 +49,7 @@ func (f *SNMPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.P
 	}
 	InfoOffset := 33
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +63,11 @@ func (f *SNMPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.P
 	}
 	stringBegin := idx + InfoOffset
 	if bytes.Contains(response, RequestID) {
-		info := map[string]any{"version": string(response[stringBegin:])}
-		return &plugins.PluginResults{Info: info}, nil
+		if stringBegin < len(response) {
+			return plugins.CreateServiceFrom(target, plugins.ServiceNmap{}, false, string(response[stringBegin:])), nil
+		} else {
+			return plugins.CreateServiceFrom(target, plugins.ServiceNmap{}, false, ""), nil
+		}
 	}
 	return nil, nil
 }
