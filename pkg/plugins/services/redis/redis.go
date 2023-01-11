@@ -17,7 +17,7 @@ package redis
 import (
 	"bytes"
 	"net"
-	"strconv"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -76,8 +76,7 @@ func (p *REDISPlugin) PortPriority(port uint16) bool {
 	return port == 6379
 }
 
-func (p *REDISPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	timeout := config.Timeout
+func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	//https://redis.io/commands/ping/
 	// PING is a supported command since 1.0.0
 	// [*1(CR)(NL)$4(CR)(NL)PING(CR)(NL)]
@@ -110,10 +109,10 @@ func (p *REDISPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.
 	if err != nil {
 		return nil, nil
 	}
-	info := map[string]any{
-		"authRequired": strconv.FormatBool(result.AuthRequired),
+	payload := plugins.ServiceRedis{
+		AuthRequired: result.AuthRequired,
 	}
-	return &plugins.PluginResults{Info: info}, nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *REDISPlugin) Name() string {

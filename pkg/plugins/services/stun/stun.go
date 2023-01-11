@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -52,7 +53,7 @@ func init() {
 	plugins.RegisterPlugin(&Plugin{})
 }
 
-func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	/**
 	 * https://datatracker.ietf.org/doc/html/rfc8489
 	 *
@@ -89,7 +90,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 		fingerprintValue >>= 8
 	}
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +120,11 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 	if err != nil {
 		return nil, nil
 	}
+	payload := plugins.ServiceStun{
+		Info: fmt.Sprintf("%s", infoMap),
+	}
 
-	return &plugins.PluginResults{Info: infoMap}, nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 }
 
 func parseResponse(response []byte) (map[string]any, error) {

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -96,8 +95,8 @@ func (p *SMBPlugin) PortPriority(port uint16) bool {
 	return port == 445
 }
 
-func DetectSMBv2(conn net.Conn, timeout time.Duration) (*map[string]any, error) {
-	info := make(map[string]any)
+func DetectSMBv2(conn net.Conn, timeout time.Duration) (*plugins.ServiceSMB, error) {
+	info := plugins.ServiceSMB{}
 
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/e14db7ff-763a-4263-8b10-0c3944f52fc5
 	negotiateReqPacket := []byte{
@@ -182,8 +181,8 @@ func DetectSMBv2(conn net.Conn, timeout time.Duration) (*map[string]any, error) 
 	if negotiateResponseData.SecurityMode&2 == 2 {
 		signingRequired = true
 	}
-	info["signingEnabled"] = strconv.FormatBool(signingEnabled)
-	info["signingRequired"] = strconv.FormatBool(signingRequired)
+	info.SigningEnabled = signingEnabled
+	info.SigningRequired = signingRequired
 
 	/**
 	 * At this point, we know SMBv2 is detected.
@@ -289,7 +288,7 @@ func DetectSMBv2(conn net.Conn, timeout time.Duration) (*map[string]any, error) 
 	if err != nil {
 		return &info, err
 	}
-	info["osVersion"] = fmt.Sprintf("%d.%d.%d", versionData.MajorVersion,
+	info.OSVersion = fmt.Sprintf("%d.%d.%d", versionData.MajorVersion,
 		versionData.MinorVersion,
 		versionData.BuildNumber)
 
@@ -323,7 +322,18 @@ func DetectSMBv2(conn net.Conn, timeout time.Duration) (*map[string]any, error) 
 		for avPair.AvID != 0 {
 			if field, exists := AvIDMap[avPair.AvID]; exists {
 				value := strings.ReplaceAll(string(response[currIdx+avPairLen:currIdx+avPairLen+int(avPair.AvLen)]), "\x00", "")
-				info[field] = value
+				switch field {
+				case "netbiosComputerName":
+					info.NetBIOSComputerName = value
+				case "netbiosDomainName":
+					info.NetBIOSDomainName = value
+				case "dnsComputerName":
+					info.DNSComputerName = value
+				case "dnsDomainName":
+					info.DNSDomainName = value
+				case "forestName": // MsvAvDnsTreeName
+					info.ForestName = value
+				}
 			}
 			currIdx += avPairLen + int(avPair.AvLen)
 			if currIdx+avPairLen > startIdx+targetInfoLen {
@@ -340,15 +350,16 @@ func DetectSMBv2(conn net.Conn, timeout time.Duration) (*map[string]any, error) 
 	return &info, nil
 }
 
-func (p *SMBPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	info, err := DetectSMBv2(conn, config.Timeout)
+func (p *SMBPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	info, err := DetectSMBv2(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
 	if info == nil {
 		return nil, nil
 	}
-	return &plugins.PluginResults{Info: *info}, nil
+
+	return plugins.CreateServiceFrom(target, info, false, info.OSVersion, plugins.TCP), nil
 }
 
 func (p *SMBPlugin) Name() string {

@@ -17,7 +17,7 @@ package mysql
 import (
 	"fmt"
 	"net"
-	"strconv"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -72,8 +72,8 @@ func init() {
 // two methods. Upon the connection of a client to a MySQL server it can return
 // one of two responses. Either the server returns an initial handshake packet
 // or an error message packet.
-func (p *MYSQLPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	response, err := utils.Recv(conn, config.Timeout)
+func (p *MYSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	response, err := utils.Recv(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -83,24 +83,22 @@ func (p *MYSQLPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.
 
 	mysqlVersionStr, err := CheckInitialHandshakePacket(response)
 	if err == nil {
-		info := map[string]any{
-			"version":      mysqlVersionStr,
-			"packetType":   "handshake",
-			"errorMessage": "",
-			"errorCode":    "0",
+		payload := plugins.ServiceMySQL{
+			PacketType:   "handshake",
+			ErrorMessage: "",
+			ErrorCode:    0,
 		}
-		return &plugins.PluginResults{Info: info}, nil
+		return plugins.CreateServiceFrom(target, payload, false, mysqlVersionStr, plugins.TCP), nil
 	}
 
 	errorStr, errorCode, err := CheckErrorMessagePacket(response)
 	if err == nil {
-		info := map[string]any{
-			"version":      "",
-			"packetType":   "error",
-			"errorMessage": errorStr,
-			"errorCode":    strconv.Itoa(errorCode),
+		payload := plugins.ServiceMySQL{
+			PacketType:   "error",
+			ErrorMessage: errorStr,
+			ErrorCode:    errorCode,
 		}
-		return &plugins.PluginResults{Info: info}, nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	return nil, nil
 }

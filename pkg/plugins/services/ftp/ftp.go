@@ -17,6 +17,7 @@ package ftp
 import (
 	"net"
 	"regexp"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -32,8 +33,8 @@ func init() {
 	plugins.RegisterPlugin(&FTPPlugin{})
 }
 
-func (p *FTPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	response, err := utils.Recv(conn, config.Timeout)
+func (p *FTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	response, err := utils.Recv(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -46,10 +47,11 @@ func (p *FTPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 		return nil, nil
 	}
 
-	return &plugins.PluginResults{
-		Info: map[string]any{
-			"banner": string(response),
-		}}, nil
+	payload := plugins.ServiceFTP{
+		Banner: string(response),
+	}
+
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *FTPPlugin) PortPriority(i uint16) bool {

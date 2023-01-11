@@ -38,7 +38,7 @@ type Testcase struct {
 	Protocol plugins.Protocol
 
 	// Function used to determine whether testcase succeeded or not
-	Expected func(*plugins.PluginResults) bool
+	Expected func(*plugins.Service) bool
 
 	// Docker containers to run
 	RunConfig dockertest.RunOptions
@@ -46,7 +46,7 @@ type Testcase struct {
 
 var dockerPool *dockertest.Pool
 
-func RunTest(t *testing.T, tc Testcase, p plugins.Plugin, config plugins.PluginConfig) error {
+func RunTest(t *testing.T, tc Testcase, p plugins.Plugin) error {
 	var err error
 	var targetAddr string
 	if dockerPool == nil {
@@ -85,8 +85,7 @@ func RunTest(t *testing.T, tc Testcase, p plugins.Plugin, config plugins.PluginC
 	conn, err := openConnection(targetAddr, tc.Protocol)
 	require.NoError(t, err, "failed to open connection to container")
 
-	config.Timeout = time.Second * 2
-	result, err := p.Run(conn, config)
+	result, err := p.Run(conn, time.Second*2, plugins.Target{})
 	require.Equal(t, true, tc.Expected(result), "failed plugin testcase")
 	require.NoError(t, err, "failed to run testcase")
 

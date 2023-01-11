@@ -306,18 +306,15 @@ func DetectMSSQL(conn net.Conn, timeout time.Duration) (Data, bool, error) {
 	return Data{Version: version}, true, nil
 }
 
-func (p *MSSQLPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	data, check, err := DetectMSSQL(conn, config.Timeout)
+func (p *MSSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	data, check, err := DetectMSSQL(conn, timeout)
 	if check && err != nil {
 		return nil, nil
 	} else if !check && err != nil {
 		return nil, err
 	}
 
-	info := map[string]any{
-		"version": data.Version,
-	}
-	return &plugins.PluginResults{Info: info}, nil
+	return plugins.CreateServiceFrom(target, plugins.ServiceMSSQL{}, false, data.Version, plugins.TCP), nil
 }
 
 func (p *MSSQLPlugin) Name() string {

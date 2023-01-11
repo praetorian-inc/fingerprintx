@@ -15,11 +15,8 @@
 package dhcp
 
 import (
-	// "os"
 	"testing"
 
-	// "github.com/ory/dockertest/v3"
-	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	"github.com/praetorian-inc/fingerprintx/pkg/test"
 )
 
@@ -46,13 +43,12 @@ func TestDHCP(t *testing.T) {
 	}
 
 	var p *Plugin
-	var config plugins.PluginConfig
 
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			err := test.RunTest(t, tc, p, config)
+			err := test.RunTest(t, tc, p)
 			if err != nil {
 				t.Errorf(err.Error())
 			}

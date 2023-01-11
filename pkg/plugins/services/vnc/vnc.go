@@ -16,6 +16,7 @@ package vnc
 
 import (
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -24,10 +25,6 @@ import (
 type VNCPlugin struct{}
 
 const VNC = "VNC"
-
-type Info struct {
-	Version string
-}
 
 // Check if the response is from a VNC server
 // https://datatracker.ietf.org/doc/html/rfc6143#section-7.1
@@ -40,10 +37,10 @@ type Info struct {
 //	zeros:
 //
 //	    RFB 003.008\n (hex 52 46 42 20 30 30 33 2e 30 30 38 0a)
-func checkVNC(data []byte) (Info, error) {
+func checkVNC(data []byte) (string, error) {
 	msgLength := len(data)
 	if msgLength != 12 {
-		return Info{}, &utils.InvalidResponseErrorInfo{
+		return "", &utils.InvalidResponseErrorInfo{
 			Service: VNC,
 			Info:    "incorrect message length",
 		}
@@ -51,7 +48,7 @@ func checkVNC(data []byte) (Info, error) {
 
 	// starts with RFB
 	if data[0] != 0x52 || data[1] != 0x46 || data[2] != 0x42 {
-		return Info{}, &utils.InvalidResponseErrorInfo{
+		return "", &utils.InvalidResponseErrorInfo{
 			Service: VNC,
 			Info:    "invalid RFB preamble",
 		}
@@ -59,13 +56,13 @@ func checkVNC(data []byte) (Info, error) {
 
 	// 8th element is '.' and the last is '\n'
 	if data[7] != 0x2e || data[11] != 0x0a {
-		return Info{}, &utils.InvalidResponseErrorInfo{
+		return "", &utils.InvalidResponseErrorInfo{
 			Service: VNC,
 			Info:    "missing ProtocolVersion characters",
 		}
 	}
 
-	return Info{Version: string(data[4:11])}, nil
+	return string(data[4:11]), nil
 }
 
 func init() {
@@ -76,8 +73,8 @@ func (p *VNCPlugin) PortPriority(port uint16) bool {
 	return port == 5900
 }
 
-func (p *VNCPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	response, err := utils.Recv(conn, config.Timeout)
+func (p *VNCPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	response, err := utils.Recv(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +87,7 @@ func (p *VNCPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 		return nil, nil
 	}
 
-	return &plugins.PluginResults{
-		Info: map[string]any{"version": info.Version}}, nil
+	return plugins.CreateServiceFrom(target, plugins.ServiceVNC{}, false, info, plugins.TCP), nil
 }
 
 func (p *VNCPlugin) Name() string {

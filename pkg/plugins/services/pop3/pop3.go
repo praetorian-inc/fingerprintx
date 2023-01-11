@@ -80,8 +80,8 @@ func DetectPOP3(conn net.Conn, timeout time.Duration, tls bool) (string, bool, e
 	return string(initialResponse[4:]), true, nil
 }
 
-func (p *POP3Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	result, check, err := DetectPOP3(conn, config.Timeout, false)
+func (p *POP3Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	result, check, err := DetectPOP3(conn, timeout, false)
 
 	if check && err != nil { // service is not running POP3
 		return nil, nil
@@ -90,18 +90,18 @@ func (p *POP3Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.P
 	}
 
 	// service is running POP3
-	return &plugins.PluginResults{Info: map[string]any{"banner": result}}, nil
+	payload := plugins.ServicePOP3{
+		Banner: result,
+	}
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *TLSPlugin) PortPriority(port uint16) bool {
 	return port == 995
 }
 
-func (p *TLSPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	result, check, err := DetectPOP3(conn, config.Timeout, true)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	result, check, err := DetectPOP3(conn, timeout, true)
 
 	if check && err != nil { // service is not running POP3S
 		return nil, nil
@@ -110,7 +110,10 @@ func (p *TLSPlugin) Run(
 	}
 
 	// service is running POP3S
-	return &plugins.PluginResults{Info: map[string]any{"banner": result}}, nil
+	payload := plugins.ServicePOP3{
+		Banner: result,
+	}
+	return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCP), nil
 }
 
 func (p *POP3Plugin) Name() string {

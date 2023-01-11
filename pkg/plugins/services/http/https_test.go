@@ -20,6 +20,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	"github.com/praetorian-inc/fingerprintx/pkg/test"
+	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 )
 
 func TestHTTPS(t *testing.T) {
@@ -28,7 +29,7 @@ func TestHTTPS(t *testing.T) {
 			Description: "https",
 			Port:        8443,
 			Protocol:    plugins.TCPTLS,
-			Expected: func(res *plugins.PluginResults) bool {
+			Expected: func(res *plugins.Service) bool {
 				return res != nil
 			},
 			RunConfig: dockertest.RunOptions{
@@ -38,14 +39,18 @@ func TestHTTPS(t *testing.T) {
 		},
 	}
 
-	p := &HTTPSPlugin{}
-	var config plugins.PluginConfig
+	p := HTTPSPlugin{}
+	wappalyzerClient, err := wappalyzer.New()
+	if err != nil {
+		panic("unable to initialize wappalyzer library")
+	}
+	p.analyzer = wappalyzerClient
 
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			err := test.RunTest(t, tc, p, config)
+			err := test.RunTest(t, tc, &p)
 			if err != nil {
 				t.Errorf(err.Error())
 			}

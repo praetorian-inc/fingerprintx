@@ -17,7 +17,7 @@ package postgres
 import (
 	"encoding/binary"
 	"net"
-	"strconv"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -105,9 +105,7 @@ func (p *POSTGRESPlugin) PortPriority(port uint16) bool {
 	return port == 5432
 }
 
-func (p *POSTGRESPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	timeout := config.Timeout
-
+func (p *POSTGRESPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	startupPacket := []byte{
 		0x00, 0x00, 0x00, 0x54, 0x00, 0x03, 0x00, 0x00, 0x75, 0x73, 0x65, 0x72, 0x00, 0x70, 0x6f, 0x73,
 		0x74, 0x67, 0x72, 0x65, 0x73, 0x00, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x00, 0x70,
@@ -130,10 +128,10 @@ func (p *POSTGRESPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugi
 		return nil, nil
 	}
 
-	info := map[string]any{
-		"authRequired": strconv.FormatBool(!successfulAuth(response)),
+	payload := plugins.ServicePostgreSQL{
+		AuthRequired: !successfulAuth(response),
 	}
-	return &plugins.PluginResults{Info: info}, nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *POSTGRESPlugin) Name() string {

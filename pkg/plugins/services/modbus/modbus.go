@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -64,9 +65,7 @@ func (p *MODBUSPlugin) PortPriority(port uint16) bool {
    Initial testing done with `docker run -it -p 502:5020 oitc/modbus-server:latest`
    The default TCP port is 502, but this is unofficial.
 */
-func (p *MODBUSPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	timeout := config.Timeout
-
+func (p *MODBUSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	transactionID := make([]byte, 2)
 	_, err := rand.Read(transactionID)
 	if err != nil {
@@ -106,10 +105,10 @@ func (p *MODBUSPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins
 		// successful request, validate contents
 		if response[ModbusHeaderLength] == ModbusDiscreteInputCode {
 			if response[ModbusHeaderLength+1] == 1 && (response[ModbusHeaderLength+2]>>1) == 0x00 {
-				return &plugins.PluginResults{}, nil
+				return plugins.CreateServiceFrom(target, plugins.ServiceModbus{}, false, "", plugins.TCP), nil
 			}
 		} else if response[ModbusHeaderLength] == ModbusDiscreteInputCode+ModbusErrorAddend {
-			return &plugins.PluginResults{}, nil
+			return plugins.CreateServiceFrom(target, plugins.ServiceModbus{}, false, "", plugins.TCP), nil
 		}
 	}
 	return nil, nil

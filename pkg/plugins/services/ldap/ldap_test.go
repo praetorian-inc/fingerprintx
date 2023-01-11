@@ -28,7 +28,7 @@ func TestLDAP(t *testing.T) {
 			Description: "ldap",
 			Port:        1389,
 			Protocol:    plugins.TCP,
-			Expected: func(res *plugins.PluginResults) bool {
+			Expected: func(res *plugins.Service) bool {
 				return res != nil
 			},
 			RunConfig: dockertest.RunOptions{
@@ -38,13 +38,12 @@ func TestLDAP(t *testing.T) {
 	}
 
 	p := &LDAPPlugin{}
-	var config plugins.PluginConfig
 
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			err := test.RunTest(t, tc, p, config)
+			err := test.RunTest(t, tc, p)
 			if err != nil {
 				t.Errorf(err.Error())
 			}

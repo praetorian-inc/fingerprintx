@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -233,8 +234,7 @@ func (p *ORACLEPlugin) Type() plugins.Protocol {
 	return plugins.TCP
 }
 
-func (p *ORACLEPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	timeout := config.Timeout
+func (p *ORACLEPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	addr := strings.Split(conn.RemoteAddr().String(), ":")
 	ip, port := addr[0], addr[1]
 	request := checkForOracle(ip, port)
@@ -248,7 +248,11 @@ func (p *ORACLEPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins
 	}
 
 	if isOracleDBRunning(response) {
-		return &plugins.PluginResults{Info: parseInfo(response)}, nil
+		oracleInfo := fmt.Sprintf("%s", parseInfo(response))
+		payload := plugins.ServiceOracle{
+			Info: oracleInfo,
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	return nil, nil
 }

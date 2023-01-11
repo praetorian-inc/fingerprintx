@@ -159,17 +159,14 @@ func DetectLDAP(conn net.Conn, timeout time.Duration) (bool, error) {
 	return false, nil
 }
 
-func (p *LDAPPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	isLDAP, err := DetectLDAP(conn, config.Timeout)
+func (p *LDAPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	isLDAP, err := DetectLDAP(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if isLDAP {
-		return &plugins.PluginResults{}, nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceLDAP{}, false, "", plugins.TCP), nil
 	}
 	return nil, nil
 }
@@ -186,17 +183,14 @@ func (p *LDAPPlugin) Type() plugins.Protocol {
 	return plugins.TCP
 }
 
-func (p *TLSPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	isLDAPS, err := DetectLDAP(conn, config.Timeout)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	isLDAPS, err := DetectLDAP(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if isLDAPS {
-		return &plugins.PluginResults{}, nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceLDAPS{}, true, "", plugins.TCP), nil
 	}
 	return nil, nil
 }

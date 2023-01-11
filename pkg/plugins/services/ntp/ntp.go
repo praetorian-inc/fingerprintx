@@ -16,6 +16,7 @@ package ntp
 
 import (
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -31,7 +32,7 @@ func init() {
 	plugins.RegisterPlugin(&Plugin{})
 }
 
-func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	// reference: https://datatracker.ietf.org/doc/html/rfc5905#section-7.3
 	InitialConnectionPackage := []byte{
 		0xe3, 0x00, 0x0a, 0xf8, // LI/VN/Mode | Stratum | Poll | Precision
@@ -48,7 +49,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 		0x00, 0x00, 0x00, 0x00,
 	}
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 
 	// check if response is valid NTP packet
 	if response[0]&0x07 == ModeServer && len(response) == len(InitialConnectionPackage) {
-		return &plugins.PluginResults{}, nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceNTP{}, false, "", plugins.UDP), nil
 	}
 	return nil, nil
 }

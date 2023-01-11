@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -33,10 +34,6 @@ import (
 type SSHPlugin struct{}
 
 const SSH = "ssh"
-
-type Info struct {
-	Info string
-}
 
 func init() {
 	plugins.RegisterPlugin(&SSHPlugin{})
@@ -58,23 +55,23 @@ func (p *SSHPlugin) PortPriority(port uint16) bool {
 //	string.  Each line SHOULD be terminated by a Carriage Return and Line
 //	Feed.  Such lines MUST NOT begin with "SSH-", and SHOULD be encoded
 //	in ISO-10646 UTF-8 [RFC3629] (language is not specified).
-func checkSSH(data []byte) (Info, error) {
+func checkSSH(data []byte) (string, error) {
 	msgLength := len(data)
 	if msgLength < 4 {
-		return Info{}, &utils.InvalidResponseErrorInfo{Service: SSH, Info: "response too short"}
+		return "", &utils.InvalidResponseErrorInfo{Service: SSH, Info: "response too short"}
 	}
 	sshID := []byte("SSH-")
 	if bytes.Equal(data[:4], sshID) {
-		return Info{Info: string(data)}, nil
+		return string(data), nil
 	}
 
 	for _, line := range strings.Split(string(data), "\r\n") {
 		if len(line) >= 4 && line[:4] == "SSH-" {
-			return Info{Info: line}, nil
+			return line, nil
 		}
 	}
 
-	return Info{}, &utils.InvalidResponseErrorInfo{Service: SSH, Info: "invalid banner prefix"}
+	return "", &utils.InvalidResponseErrorInfo{Service: SSH, Info: "invalid banner prefix"}
 }
 
 func checkAlgo(data []byte) (map[string]string, error) {
@@ -197,8 +194,8 @@ func checkAlgo(data []byte) (map[string]string, error) {
 	return info, nil
 }
 
-func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	response, err := utils.Recv(conn, config.Timeout)
+func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	response, err := utils.Recv(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -213,15 +210,17 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	msg := []byte("SSH-2.0-Fingerprintx-SSH2\r\n")
 
-	response, err = utils.SendRecv(conn, msg, config.Timeout)
+	response, err = utils.SendRecv(conn, msg, timeout)
 	if err != nil {
 		return nil, err
 	}
 
 	algo, err := checkAlgo(response)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"Banner": banner.Info}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 
 	sshConfig := &ssh.ClientConfig{}
@@ -229,7 +228,7 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 	fullConf.SetDefaults()
 
 	c := ssh.NewTransport(conn, fullConf.Rand, true)
-	t := ssh.NewHandshakeTransport(c, &fullConf.Config, msg, []byte(banner.Info))
+	t := ssh.NewHandshakeTransport(c, &fullConf.Config, msg, []byte(banner))
 	sendMsg := ssh.KexInitMsg{
 		KexAlgos:                t.Config.KeyExchanges,
 		CiphersClientServer:     t.Config.Ciphers,
@@ -242,8 +241,11 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 	}
 	_, err = io.ReadFull(rand.Reader, sendMsg.Cookie[:])
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+			Algo:   fmt.Sprintf("%s", algo),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	if firstKeyExchange := t.SessionID == nil; firstKeyExchange {
 		sendMsg.KexAlgos = make([]string, 0, len(t.Config.KeyExchanges)+1)
@@ -256,8 +258,11 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	err = ssh.PushPacket(t.HandshakeTransport, packetCopy)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+			Algo:   fmt.Sprintf("%s", algo),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 
 	cookie, err := hex.DecodeString(algo["cookie"])
@@ -265,8 +270,11 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 	copy(ret[:], cookie)
 
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"Banner": banner.Info, "Algorithm": algo}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+			Algo:   fmt.Sprintf("%s", algo),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	otherInit := &ssh.KexInitMsg{
 		KexAlgos:                strings.Split(algo["KexAlgos"], ","),
@@ -284,8 +292,11 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	t.Algorithms, err = ssh.FindAgreedAlgorithms(false, &sendMsg, otherInit)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+			Algo:   fmt.Sprintf("%s", algo),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	magics := ssh.HandshakeMagics{
 		ClientVersion: t.ClientVersion,
@@ -298,29 +309,31 @@ func (p *SSHPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Pl
 
 	result, err := ssh.Clients(t, kex, &magics)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+			Algo:   fmt.Sprintf("%s", algo),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	hostKey, err := ssh.ParsePublicKey(result.HostKey)
 	if err != nil {
-		return &plugins.PluginResults{
-			Info: map[string]any{"banner": banner.Info, "algorithm": algo}}, nil
+		payload := plugins.ServiceSSH{
+			Banner: banner,
+			Algo:   fmt.Sprintf("%s", algo),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	fingerprint := ssh.FingerprintSHA256(hostKey)
 	base64HostKey := base64.StdEncoding.EncodeToString(result.HostKey)
 
-	hostKeyData := map[string]string{
-		"base64Encoded": base64HostKey,
-		"type":          hostKey.Type(),
-		"fingerprint":   fingerprint,
+	payload := plugins.ServiceSSH{
+		Banner:             banner,
+		Algo:               fmt.Sprintf("%s", algo),
+		HostKey:            base64HostKey,
+		HostKeyType:        hostKey.Type(),
+		HostKeyFingerprint: fingerprint,
 	}
-
-	return &plugins.PluginResults{
-		Info: map[string]any{
-			"banner":    banner.Info,
-			"algorithm": algo,
-			"hostKey":   hostKeyData,
-		}}, nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *SSHPlugin) Name() string {

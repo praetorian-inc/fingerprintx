@@ -17,7 +17,6 @@ package linuxrpc
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"net"
 	"time"
 
@@ -53,46 +52,24 @@ type RPCPlugin struct{}
 
 const RPC = "RPC"
 
-type RPCB struct {
-	Program  int    `json:"program"`
-	Version  int    `json:"version"`
-	Protocol string `json:"protocol"`
-	Address  string `json:"address"`
-	Owner    string `json:"owner"`
-}
-
-type RPCLookup struct {
-	Entries []RPCB `json:"entries"`
-}
-
 func init() {
 	plugins.RegisterPlugin(&RPCPlugin{})
 }
 
-func (p *RPCPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	lookupResponse := RPCLookup{}
+func (p *RPCPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	rpcService := plugins.ServiceRPC{}
 
-	check, err := DetectRPCInfoService(conn, &lookupResponse, config.Timeout)
+	check, err := DetectRPCInfoService(conn, &rpcService, timeout)
 	if check && err != nil {
 		return nil, nil
 	}
 	if err == nil {
-		rpcInfo, rpcErr := json.Marshal(lookupResponse)
-		if rpcErr != nil {
-			info := map[string]any{
-				"RPCInfo": string(rpcInfo),
-			}
-			return &plugins.PluginResults{Info: info}, nil
-		}
-		return &plugins.PluginResults{}, nil
+		return plugins.CreateServiceFrom(target, rpcService, false, "", plugins.TCP), nil
 	}
 	return nil, err
 }
 
-func DetectRPCInfoService(conn net.Conn, lookupResponse *RPCLookup, timeout time.Duration) (bool, error) {
+func DetectRPCInfoService(conn net.Conn, lookupResponse *plugins.ServiceRPC, timeout time.Duration) (bool, error) {
 	callPacket := []byte{
 		0x80, 0x00, 0x00, 0x28, 0x72, 0xfe, 0x1d, 0x13,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
@@ -138,12 +115,12 @@ func DetectRPCInfoService(conn net.Conn, lookupResponse *RPCLookup, timeout time
 	return true, parseRPCInfo(response, lookupResponse)
 }
 
-func parseRPCInfo(response []byte, lookupResponse *RPCLookup) error {
+func parseRPCInfo(response []byte, lookupResponse *plugins.ServiceRPC) error {
 	response = response[0x20:]
 	valueFollows := 1
 
 	for valueFollows == 1 {
-		tmp := RPCB{}
+		tmp := plugins.RPCB{}
 
 		tmp.Program = int(binary.BigEndian.Uint32(response[0:4]))
 		response = response[4:]

@@ -35,8 +35,8 @@ func init() {
 	plugins.RegisterPlugin(&TLSPlugin{})
 }
 
-func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	result, err := Run(conn, "false", config.Timeout)
+func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	result, err := Run(conn, false, timeout, target)
 	return result, err
 }
 
@@ -60,8 +60,8 @@ func (p *Plugin) Type() plugins.Protocol {
 	return plugins.TCP
 }
 
-func (p *TLSPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	result, err := Run(conn, "true", config.Timeout)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	result, err := Run(conn, true, timeout, target)
 	return result, err
 }
 
@@ -111,7 +111,7 @@ authentication will be detected by any of the above methods. It's possible that
 strategy 3 will still work in this situation, but I was not able to confirm due
 to the difficulty of setting up a testing environment for an older version.
 */
-func Run(conn net.Conn, tls string, timeout time.Duration) (*plugins.PluginResults, error) {
+func Run(conn net.Conn, tls bool, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	/* Initiate first TCP connection with target. If the target is running an
 	/* older version of Kafka, the connection will be terminated after sending
 	/* ApiVersions, and we will need to make a new one. */
@@ -127,7 +127,8 @@ func Run(conn net.Conn, tls string, timeout time.Duration) (*plugins.PluginResul
 	if !notReportError {
 		return nil, nil
 	}
-	return &plugins.PluginResults{Info: map[string]any{"version": ">=0.10.0.0", "TLS": tls}}, nil
+
+	return plugins.CreateServiceFrom(target, plugins.ServiceKafka{}, tls, ">=0.10.0.0", plugins.TCP), nil
 }
 
 /* Helper function to generate a correlation_id */

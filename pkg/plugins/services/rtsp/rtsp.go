@@ -59,8 +59,7 @@ func (p *RTSPPlugin) PortPriority(port uint16) bool {
    The default port for rtsp is 554.
 */
 
-func (p *RTSPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
-	timeout := config.Timeout
+func (p *RTSPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	cseq := strconv.Itoa(rand.Intn(10000)) //nolint:gosec
 
 	requestString := strings.Join([]string{
@@ -101,10 +100,15 @@ func (p *RTSPPlugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.P
 
 		serverValueStart := serverStart + RtspServerHeaderLength
 		serverValueEnd := strings.Index(response[serverValueStart:], "\r\n")
-		info := map[string]any{
-			"serverInfo": response[serverValueStart : serverValueStart+serverValueEnd],
+		if serverValueStart+serverValueEnd >= len(response) {
+			return nil, nil
 		}
-		return &plugins.PluginResults{Info: info}, nil
+
+		serverinfo := response[serverValueStart : serverValueStart+serverValueEnd]
+		payload := plugins.ServiceRtsp{
+			ServerInfo: serverinfo,
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 
 	return nil, nil

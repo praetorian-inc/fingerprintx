@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
@@ -235,7 +236,7 @@ func ipParse(options []byte) []string {
 	return ipStrList
 }
 
-func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.PluginResults, error) {
+func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	sliceIP := net.ParseIP("127.0.0.1")
 	if sliceIP == nil {
 		return nil, &utils.InvalidAddrProvided{Service: DHCP}
@@ -296,7 +297,7 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 	InitialConnectionPackage = append(InitialConnectionPackage, ThirdPartConnectionPackage...)
 	InitialConnectionPackage = append(InitialConnectionPackage, 0xff) // Option: (255) End
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, config.Timeout)
+	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +316,11 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 		optionList := map[string]any{}
 		for int(options[0]) != 255 {
 			if len(options) < int(options[1])+2 {
-				return &plugins.PluginResults{Info: map[string]any{"Option": optionList, "Packet corruption": "true"}}, nil
+				// packet corruption
+				payload := plugins.ServiceDHCP{
+					Option: fmt.Sprintf("%s", optionList),
+				}
+				return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 			}
 			c := int(options[0])
 			switch c {
@@ -344,17 +349,16 @@ func (p *Plugin) Run(conn net.Conn, config plugins.PluginConfig) (*plugins.Plugi
 			}
 			options = options[2+int(options[1]):]
 		}
-		return &plugins.PluginResults{Info: map[string]any{"option": optionList}}, nil
+		payload := plugins.ServiceDHCP{
+			Option: fmt.Sprintf("%s", optionList),
+		}
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 	}
 	return nil, nil
 }
 
 func (p *Plugin) PortPriority(i uint16) bool {
 	return i == 67
-}
-
-func (p *Plugin) SupportedIPVersion() plugins.SupportedIPVersion {
-	return plugins.IPv4
 }
 
 func (p *Plugin) Name() string {

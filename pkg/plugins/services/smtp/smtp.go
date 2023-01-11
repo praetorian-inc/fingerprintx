@@ -149,34 +149,28 @@ func DetectSMTP(conn net.Conn, tls bool, timeout time.Duration) (Data, bool, err
 	return Data{}, true, &utils.InvalidResponseError{Service: protocol}
 }
 
-func (p *SMTPPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	data, check, err := DetectSMTP(conn, false, config.Timeout)
+func (p *SMTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	data, check, err := DetectSMTP(conn, false, timeout)
 	if err == nil && check {
-		info := map[string]any{
-			"banner":      data.Banner,
-			"authMethods": strings.Join(data.AuthMethods, ","),
+		payload := plugins.ServiceSMTP{
+			Banner:      data.Banner,
+			AuthMethods: data.AuthMethods,
 		}
-		return &plugins.PluginResults{Info: info}, nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	} else if err != nil && check {
 		return nil, nil
 	}
 	return nil, err
 }
 
-func (p *TLSPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	data, check, err := DetectSMTP(conn, false, config.Timeout)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	data, check, err := DetectSMTP(conn, false, timeout)
 	if err == nil && check {
-		info := map[string]any{
-			"banner":      data.Banner,
-			"authMethods": strings.Join(data.AuthMethods, ","),
+		payload := plugins.ServiceSMTP{
+			Banner:      data.Banner,
+			AuthMethods: data.AuthMethods,
 		}
-		return &plugins.PluginResults{Info: info}, nil
+		return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCP), nil
 	} else if err != nil && check {
 		return nil, nil
 	}

@@ -137,11 +137,8 @@ func DetectIMAP(conn net.Conn, timeout time.Duration) (string, bool, error) {
 	return string(response[5:]), check, err
 }
 
-func (p *IMAPPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	result, check, err := DetectIMAP(conn, config.Timeout)
+func (p *IMAPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	result, check, err := DetectIMAP(conn, timeout)
 	if err != nil && check { // service is not running IMAP
 		return nil, nil
 	} else if err != nil && !check { // plugin error
@@ -149,7 +146,10 @@ func (p *IMAPPlugin) Run(
 	}
 
 	// service is running IMAP
-	return &plugins.PluginResults{Info: map[string]any{"banner": result}}, nil
+	payload := plugins.ServiceIMAPS{
+		Banner: result,
+	}
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *IMAPPlugin) PortPriority(i uint16) bool {
@@ -164,11 +164,8 @@ func (p *IMAPPlugin) Type() plugins.Protocol {
 	return plugins.TCP
 }
 
-func (p *TLSPlugin) Run(
-	conn net.Conn,
-	config plugins.PluginConfig,
-) (*plugins.PluginResults, error) {
-	result, check, err := DetectIMAP(conn, config.Timeout)
+func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	result, check, err := DetectIMAP(conn, timeout)
 	if err != nil && check { // service is not running IMAP
 		return nil, nil
 	} else if err != nil && !check { // plugin error
@@ -176,7 +173,10 @@ func (p *TLSPlugin) Run(
 	}
 
 	// service is running IMAPS
-	return &plugins.PluginResults{Info: map[string]any{"banner": result}}, nil
+	payload := plugins.ServiceIMAPS{
+		Banner: result,
+	}
+	return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCP), nil
 }
 
 func (p *TLSPlugin) PortPriority(i uint16) bool {
