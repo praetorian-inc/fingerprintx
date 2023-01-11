@@ -129,7 +129,7 @@ func Run(conn net.Conn, tls bool, timeout time.Duration, target plugins.Target) 
 	if !notReportError {
 		return nil, nil
 	}
-	return plugins.CreateServiceFrom(target, plugins.ServiceKafka{}, tls, "<=0.9.0.X"), nil
+	return plugins.CreateServiceFrom(target, plugins.ServiceKafka{}, tls, "<=0.9.0.X", plugins.TCP), nil
 }
 
 /* Helper function to generate a correlation_id */

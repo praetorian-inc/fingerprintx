@@ -20,6 +20,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	"github.com/praetorian-inc/fingerprintx/pkg/test"
+	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 )
 
 func TestHTTP(t *testing.T) {
@@ -38,13 +39,18 @@ func TestHTTP(t *testing.T) {
 		},
 	}
 
-	p := &HTTPPlugin{}
+	p := HTTPPlugin{}
+	wappalyzerClient, err := wappalyzer.New()
+	if err != nil {
+		panic("unable to initialize wappalyzer library")
+	}
+	p.analyzer = wappalyzerClient
 
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.Description, func(t *testing.T) {
 			t.Parallel()
-			err := test.RunTest(t, tc, p)
+			err := test.RunTest(t, tc, &p)
 			if err != nil {
 				t.Errorf(err.Error())
 			}

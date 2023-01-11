@@ -314,7 +314,7 @@ func (p *MSSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 		return nil, err
 	}
 
-	return plugins.CreateServiceFrom(target, plugins.ServiceMSSQL{}, false, data.Version), nil
+	return plugins.CreateServiceFrom(target, plugins.ServiceMSSQL{}, false, data.Version, plugins.TCP), nil
 }
 
 func (p *MSSQLPlugin) Name() string {

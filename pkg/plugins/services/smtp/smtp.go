@@ -156,7 +156,7 @@ func (p *SMTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 			Banner:      data.Banner,
 			AuthMethods: data.AuthMethods,
 		}
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	} else if err != nil && check {
 		return nil, nil
 	}
@@ -170,7 +170,7 @@ func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 			Banner:      data.Banner,
 			AuthMethods: data.AuthMethods,
 		}
-		return plugins.CreateServiceFrom(target, payload, true, ""), nil
+		return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCP), nil
 	} else if err != nil && check {
 		return nil, nil
 	}

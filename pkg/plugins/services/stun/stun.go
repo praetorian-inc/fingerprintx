@@ -116,13 +116,15 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 	}
 
 	// parse attributes (possibly optional)
-	// infoMap, err := parseResponse(response)
-	// if err != nil {
-	// 	return nil, nil
-	// }
+	infoMap, err := parseResponse(response)
+	if err != nil {
+		return nil, nil
+	}
+	payload := plugins.ServiceStun{
+		Info: fmt.Sprintf("%s", infoMap),
+	}
 
-	// return &plugins.PluginResults{Info: infoMap}, nil
-	return nil, nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 }
 
 func parseResponse(response []byte) (map[string]any, error) {

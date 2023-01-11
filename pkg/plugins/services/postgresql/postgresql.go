@@ -131,7 +131,7 @@ func (p *POSTGRESPlugin) Run(conn net.Conn, timeout time.Duration, target plugin
 	payload := plugins.ServicePostgreSQL{
 		AuthRequired: !successfulAuth(response),
 	}
-	return plugins.CreateServiceFrom(target, payload, false, ""), nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *POSTGRESPlugin) Name() string {

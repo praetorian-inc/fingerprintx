@@ -33,7 +33,7 @@ const (
 	DEFAULT outputFormat = "DEFAULT"
 )
 
-func Report(results []plugins.Service) error {
+func Report(services []plugins.Service) error {
 	var writeFile *os.File
 	var outputFormat = DEFAULT
 	var csvWriter *csv.Writer
@@ -68,23 +68,27 @@ func Report(results []plugins.Service) error {
 		}
 	}
 
-	for _, result := range results {
+	for _, service := range services {
 		switch outputFormat {
 		case JSON:
-			data, err := json.Marshal(result)
+			data, err := json.Marshal(service)
 			if err != nil {
 				return err
 			}
 			log.Println(string(data))
 		case CSV:
-			portStr := strconv.FormatInt(int64(result.Port), 10)
-			err = csvWriter.Write([]string{result.Host, result.IP, portStr, result.Protocol, strconv.FormatBool(result.TLS), string(result.Raw)})
+			portStr := strconv.FormatInt(int64(service.Port), 10)
+			err = csvWriter.Write([]string{service.Host, service.IP, portStr, service.Protocol, strconv.FormatBool(service.TLS), string(service.Raw)})
 			if err != nil {
 				return err
 			}
 			csvWriter.Flush()
 		default:
-			log.Printf("%s://%s:%d (%s)\n", strings.ToLower(result.Protocol), result.IP, result.Port, result.Host)
+			if len(service.Host) > 0 {
+				log.Printf("%s://%s:%d (%s)\n", strings.ToLower(service.Protocol), service.Host, service.Port, service.IP)
+			} else {
+				log.Printf("%s://%s:%d\n", strings.ToLower(service.Protocol), service.IP, service.Port)
+			}
 		}
 	}
 	return nil

@@ -73,7 +73,7 @@ func (p *RSYNCPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 
 	if string(response[:RsyncMagicHeaderLength]) == "@RSYNCD:" {
 		version := strings.Split(string(response[RsyncMagicHeaderLength+1:]), "\n")[0]
-		return plugins.CreateServiceFrom(target, plugins.ServiceRsync{}, false, version), nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceRsync{}, false, version, plugins.TCP), nil
 	}
 
 	return nil, nil

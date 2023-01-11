@@ -112,7 +112,7 @@ func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 	payload := plugins.ServiceRedis{
 		AuthRequired: result.AuthRequired,
 	}
-	return plugins.CreateServiceFrom(target, payload, false, ""), nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *REDISPlugin) Name() string {

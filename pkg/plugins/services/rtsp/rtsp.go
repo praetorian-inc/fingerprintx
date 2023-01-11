@@ -108,7 +108,7 @@ func (p *RTSPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 		payload := plugins.ServiceRtsp{
 			ServerInfo: serverinfo,
 		}
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 
 	return nil, nil

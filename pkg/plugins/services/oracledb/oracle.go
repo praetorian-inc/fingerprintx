@@ -252,7 +252,7 @@ func (p *ORACLEPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.
 		payload := plugins.ServiceOracle{
 			Info: oracleInfo,
 		}
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	return nil, nil
 }

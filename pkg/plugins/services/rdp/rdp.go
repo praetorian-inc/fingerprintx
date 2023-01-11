@@ -183,8 +183,8 @@ func DetectRDP(conn net.Conn, timeout time.Duration) (string, bool, error) {
 	return "", true, &utils.InvalidResponseError{Service: RDP}
 }
 
-func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, error) {
-	info := make(map[string]any)
+func DetectRDPAuth(conn net.Conn, timeout time.Duration) (*plugins.ServiceRDP, bool, error) {
+	info := plugins.ServiceRDP{}
 
 	// CredSSP protocol - NTLM authentication
 	// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-cssp
@@ -213,7 +213,7 @@ func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, 
 
 	response, err := utils.SendRecv(conn, NegotiatePacket, timeout)
 	if err != nil {
-		return info, false, err
+		return nil, false, err
 	}
 
 	type NTLMChallenge struct {
@@ -235,24 +235,24 @@ func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, 
 
 	challengeStartOffset := bytes.Index(response, []byte{'N', 'T', 'L', 'M', 'S', 'S', 'P', 0})
 	if challengeStartOffset == -1 {
-		return info, false, nil
+		return nil, false, nil
 	}
 	if len(response) < challengeStartOffset+challengeLen {
-		return info, false, nil
+		return nil, false, nil
 	}
 	var responseData NTLMChallenge
 	response = response[challengeStartOffset:]
 	responseBuf := bytes.NewBuffer(response)
 	err = binary.Read(responseBuf, binary.LittleEndian, &responseData)
 	if err != nil {
-		return info, false, err
+		return nil, false, err
 	}
 
 	// Check if valid NTLM challenge response message structure
 	if responseData.MessageType != 0x00000002 ||
 		responseData.Reserved != 0 ||
 		!reflect.DeepEqual(responseData.Version[4:], []byte{0, 0, 0, 0xF}) {
-		return info, false, nil
+		return nil, false, nil
 	}
 
 	// Parse: Version
@@ -265,9 +265,9 @@ func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, 
 	versionBuf := bytes.NewBuffer(responseData.Version[:4])
 	err = binary.Read(versionBuf, binary.LittleEndian, &versionData)
 	if err != nil {
-		return info, true, err
+		return nil, true, err
 	}
-	info["OSVersion"] = fmt.Sprintf("%d.%d.%d", versionData.MajorVersion,
+	info.OSVersion = fmt.Sprintf("%d.%d.%d", versionData.MajorVersion,
 		versionData.MinorVersion,
 		versionData.BuildNumber)
 
@@ -277,7 +277,7 @@ func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, 
 		startIdx := int(responseData.TargetNameBufferOffset)
 		endIdx := startIdx + targetNameLen
 		targetName := strings.ReplaceAll(string(response[startIdx:endIdx]), "\x00", "")
-		info["TargetName"] = targetName
+		info.TargetName = targetName
 	}
 
 	// Parse: TargetInfo
@@ -292,40 +292,50 @@ func DetectRDPAuth(conn net.Conn, timeout time.Duration) (map[string]any, bool, 
 	type AVPair struct {
 		AvID  uint16
 		AvLen uint16
-		// Value (variable)
 	}
 	var avPairLen = 4
 	targetInfoLen := int(responseData.TargetInfoLen)
 	if targetInfoLen > 0 {
 		startIdx := int(responseData.TargetInfoBufferOffset)
 		if startIdx+targetInfoLen > len(response) {
-			return info, true, fmt.Errorf("Invalid TargetInfoLen value")
+			return &info, true, fmt.Errorf("Invalid TargetInfoLen value")
 		}
 		var avPair AVPair
 		avPairBuf := bytes.NewBuffer(response[startIdx : startIdx+avPairLen])
 		err = binary.Read(avPairBuf, binary.LittleEndian, &avPair)
 		if err != nil {
-			return info, true, err
+			return &info, true, err
 		}
 		currIdx := startIdx
 		for avPair.AvID != 0 {
 			if field, exists := AvIDMap[avPair.AvID]; exists {
 				value := strings.ReplaceAll(string(response[currIdx+avPairLen:currIdx+avPairLen+int(avPair.AvLen)]), "\x00", "")
-				info[field] = value
+				switch field {
+				case "netbiosComputerName":
+					info.NetBIOSComputerName = value
+				case "netbiosDomainName":
+					info.NetBIOSDomainName = value
+				case "dnsComputerName":
+					info.DNSComputerName = value
+				case "dnsDomainName":
+					info.DNSDomainName = value
+				case "forestName": // MsvAvDnsTreeName
+					info.ForestName = value
+				}
 			}
 			currIdx += avPairLen + int(avPair.AvLen)
 			if currIdx+avPairLen > startIdx+targetInfoLen {
-				return info, true, fmt.Errorf("Invalid AV_PAIR list")
+				return &info, true, fmt.Errorf("Invalid AV_PAIR list")
 			}
 			avPairBuf = bytes.NewBuffer(response[currIdx : currIdx+avPairLen])
 			err = binary.Read(avPairBuf, binary.LittleEndian, &avPair)
 			if err != nil {
-				return info, true, err
+				return &info, true, err
 			}
 		}
 	}
 
-	return info, true, nil
+	return &info, true, nil
 }
 
 func (p *RDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
@@ -336,7 +346,7 @@ func (p *RDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		payload := plugins.ServiceRDP{
 			OSFingerprint: fingerprint,
 		}
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	} else {
 		return nil, err
 	}
@@ -346,11 +356,8 @@ func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	info, check, err := DetectRDPAuth(conn, timeout)
 	if check && err != nil {
 		return nil, nil
-	} else if check && err == nil {
-		payload := plugins.ServiceRDP{
-			Info: fmt.Sprintf("%s", info),
-		}
-		return plugins.CreateServiceFrom(target, payload, true, ""), nil
+	} else if check && info != nil && err == nil {
+		return plugins.CreateServiceFrom(target, *info, true, "", plugins.TCP), nil
 	} else {
 		return nil, err
 	}

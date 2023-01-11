@@ -64,9 +64,9 @@ func (f *SNMPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	stringBegin := idx + InfoOffset
 	if bytes.Contains(response, RequestID) {
 		if stringBegin < len(response) {
-			return plugins.CreateServiceFrom(target, plugins.ServiceNmap{}, false, string(response[stringBegin:])), nil
+			return plugins.CreateServiceFrom(target, plugins.ServiceSNMP{}, false, string(response[stringBegin:]), plugins.UDP), nil
 		} else {
-			return plugins.CreateServiceFrom(target, plugins.ServiceNmap{}, false, ""), nil
+			return plugins.CreateServiceFrom(target, plugins.ServiceSNMP{}, false, "", plugins.UDP), nil
 		}
 	}
 	return nil, nil

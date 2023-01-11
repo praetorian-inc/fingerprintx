@@ -45,11 +45,6 @@ func ScanTargets(targets []plugins.Target, config Config) ([]plugins.Service, er
 	}
 
 	for _, target := range targets {
-
-		// scan target
-		// if it was found add to results
-		// if it wasn't add to unidentified Services
-
 		result, err := config.simpleScanTarget(target, true)
 		if err == nil && result != nil {
 			results = append(results, *result)

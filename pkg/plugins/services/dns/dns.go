@@ -67,7 +67,7 @@ func (p *UDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 			payload := plugins.ServiceDNS{
 				ResponseTXT: responseTXT,
 			}
-			return plugins.CreateServiceFrom(target, payload, false, ""), nil
+			return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 		}
 		return nil, nil
 	}
@@ -120,7 +120,7 @@ func (p TCPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Targ
 			payload := plugins.ServiceDNS{
 				ResponseTXT: responseTXT,
 			}
-			return plugins.CreateServiceFrom(target, payload, false, ""), nil
+			return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 		}
 		return nil, nil
 	}

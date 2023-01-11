@@ -59,7 +59,7 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 
 	// check if response is valid NTP packet
 	if response[0]&0x07 == ModeServer && len(response) == len(InitialConnectionPackage) {
-		return plugins.CreateServiceFrom(target, plugins.ServiceNTP{}, false, ""), nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceNTP{}, false, "", plugins.UDP), nil
 	}
 	return nil, nil
 }

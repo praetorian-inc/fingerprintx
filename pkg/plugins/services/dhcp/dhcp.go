@@ -320,7 +320,7 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 				payload := plugins.ServiceDHCP{
 					Option: fmt.Sprintf("%s", optionList),
 				}
-				return plugins.CreateServiceFrom(target, payload, false, ""), nil
+				return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 			}
 			c := int(options[0])
 			switch c {
@@ -352,7 +352,7 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 		payload := plugins.ServiceDHCP{
 			Option: fmt.Sprintf("%s", optionList),
 		}
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 	}
 	return nil, nil
 }
@@ -360,10 +360,6 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 func (p *Plugin) PortPriority(i uint16) bool {
 	return i == 67
 }
-
-// func (p *Plugin) SupportedIPVersion() plugins.SupportedIPVersion {
-// 	return plugins.IPv4
-// }
 
 func (p *Plugin) Name() string {
 	return DHCP

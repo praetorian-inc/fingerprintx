@@ -283,7 +283,7 @@ func (p *TELNETPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.
 	payload := plugins.ServiceTelnet{
 		ServerData: hex.EncodeToString(response),
 	}
-	return plugins.CreateServiceFrom(target, payload, false, ""), nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *TELNETPlugin) Name() string {

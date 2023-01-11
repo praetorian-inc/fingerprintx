@@ -75,7 +75,7 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 				response[i:i+SessionIDLength],
 				InitialConnectionPackage[1:1+SessionIDLength],
 			) {
-				return plugins.CreateServiceFrom(target, plugins.ServiceOpenVPN{}, false, ""), nil
+				return plugins.CreateServiceFrom(target, plugins.ServiceOpenVPN{}, false, "", plugins.UDP), nil
 			}
 		}
 	}

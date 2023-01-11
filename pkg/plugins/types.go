@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"strings"
 	"time"
 )
 
@@ -34,13 +35,7 @@ const (
 
 const TypeService string = "service"
 
-// const (
-// 	IPv4 SupportedIPVersion = 1 << iota
-// 	IPv6
-// )
-
 const (
-	ProtoAMQP       = "amqp"
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
 	ProtoFTP        = "ftp"
@@ -51,11 +46,9 @@ const (
 	ProtoIMAPS      = "imaps"
 	ProtoIPSEC      = "ipsec"
 	ProtoKafka      = "kafka"
-	ProtoKerberos   = "kerberos"
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
 	ProtoModbus     = "modbus"
-	ProtoMongoDB    = "mongodb"
 	ProtoMQTT       = "mqtt"
 	ProtoMSSQL      = "mssql"
 	ProtoMySQL      = "mysql"
@@ -76,11 +69,10 @@ const (
 	ProtoSMTPS      = "smtps"
 	ProtoSNMP       = "snmp"
 	ProtoSSH        = "ssh"
+	ProtoStun       = "stun"
 	ProtoTelnet     = "telnet"
 	ProtoVNC        = "vnc"
-	ProtoZMTP       = "zmtp"
 	ProtoUnknown    = "unknown"
-	ProtoNmap       = "nmap"
 )
 
 // Used as a key for maps to plugins.
@@ -102,6 +94,118 @@ func (e Service) Metadata() Metadata {
 		var p ServiceFTP
 		json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoPostgreSQL:
+		var p ServicePostgreSQL
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoVNC:
+		var p ServiceVNC
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoTelnet:
+		var p ServiceTelnet
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRedis:
+		var p ServiceRedis
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoHTTP:
+		var p ServiceHTTP
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoHTTPS:
+		var p ServiceHTTPS
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoHTTP2:
+		var p ServiceHTTP
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoSMB:
+		var p ServiceSMB
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRDP:
+		var p ServiceRDP
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRPC:
+		var p ServiceRPC
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMSSQL:
+		var p ServiceMSSQL
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoNetbios:
+		var p ServiceNetbios
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoKafka:
+		var p ServiceKafka
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoOracle:
+		var p ServiceOracle
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMySQL:
+		var p ServiceMySQL
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoSMTP:
+		var p ServiceSMTP
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoSMTPS:
+		var p ServiceSMTPS
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoLDAP:
+		var p ServiceLDAP
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoModbus:
+		var p ServiceModbus
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoLDAPS:
+		var p ServiceLDAPS
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoSSH:
+		var p ServiceSSH
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoIMAP:
+		var p ServiceIMAP
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRsync:
+		var p ServiceRsync
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRtsp:
+		var p ServiceRtsp
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoIMAPS:
+		var p ServiceIMAPS
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMQTT:
+		var p ServiceMQTT
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoPOP3:
+		var p ServicePOP3
+		json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoPOP3S:
+		var p ServicePOP3S
+		json.Unmarshal(e.Raw, &p)
+		return p
 	default:
 		var p ServiceUnknown
 		json.Unmarshal(e.Raw, &p)
@@ -115,21 +219,15 @@ func (e ServiceUnknown) Type() string { return ProtoUnknown }
 
 func (e ServiceUnknown) Map() map[string]any { return e }
 
-// type PluginConfig struct {
-// 	Timeout time.Duration
-// }
-
-// type PluginResults struct {
-// 	Info map[string]any
-// }
-
-func CreateServiceFrom(target Target, m Metadata, tls bool, version string) *Service {
+func CreateServiceFrom(target Target, m Metadata, tls bool, version string, transport Protocol) *Service {
 	service := Service{}
 	b, _ := json.Marshal(m)
 
 	service.Host = target.Host
+	service.IP = target.Address.Addr().String()
 	service.Port = int(target.Address.Port())
 	service.Protocol = m.Type()
+	service.Transport = strings.ToLower(transport.String())
 	service.Raw = json.RawMessage(b)
 	if version != "" {
 		service.Version = version
@@ -152,26 +250,15 @@ type Plugin interface {
 	Priority() int
 }
 
-// type PluginExtended interface {
-// 	Plugin
-//
-// 	// Return true if the dst port must be skipped
-// 	PortReject(uint16) bool
-//
-// 	// Return 0 if any src port is allowed
-// 	SrcPort() uint16
-//
-// 	SupportedIPVersion() SupportedIPVersion
-// }
-
 type Service struct {
-	Host     string          `json:"host"`
-	IP       string          `json:"ip"`
-	Port     int             `json:"port"`
-	Protocol string          `json:"protocol"`
-	TLS      bool            `json:"tls"`
-	Version  string          `json:"version"`
-	Raw      json.RawMessage `json:"metadata"`
+	Host      string          `json:"host,omitempty"`
+	IP        string          `json:"ip"`
+	Port      int             `json:"port"`
+	Protocol  string          `json:"protocol"`
+	TLS       bool            `json:"tls"`
+	Transport string          `json:"transport"`
+	Version   string          `json:"version,omitempty"`
+	Raw       json.RawMessage `json:"metadata"`
 }
 
 type ServiceHTTP struct {
@@ -193,21 +280,42 @@ type ServiceHTTPS struct {
 func (e ServiceHTTPS) Type() string { return ProtoHTTPS }
 
 type ServiceRDP struct {
-	OSFingerprint string `json:"fingerprint"` // e.g. Windows Server 2016 or 2019
-	Info          string `json:"info"`        // map[string]any
+	OSFingerprint       string `json:"fingerprint"` // e.g. Windows Server 2016 or 2019
+	Info                string `json:"info"`        // map[string]any
+	OSVersion           string `json:"osVersion,omitempty"`
+	TargetName          string `json:"targetName,omitempty"`
+	NetBIOSComputerName string `json:"netBIOSComputerName,omitempty"`
+	NetBIOSDomainName   string `json:"netBIOSDomainName,omitempty"`
+	DNSComputerName     string `json:"dnsComputerName,omitempty"`
+	DNSDomainName       string `json:"dnsDomainName,omitempty"`
+	ForestName          string `json:"forestName,omitempty"`
 }
 
 func (e ServiceRDP) Type() string { return ProtoRDP }
+
+type ServiceRPC struct {
+	Entries []RPCB `json:"entries"`
+}
+
+type RPCB struct {
+	Program  int    `json:"program"`
+	Version  int    `json:"version"`
+	Protocol string `json:"protocol"`
+	Address  string `json:"address"`
+	Owner    string `json:"owner"`
+}
+
+func (e ServiceRPC) Type() string { return ProtoRDP }
 
 type ServiceSMB struct {
 	SigningEnabled      bool   `json:"signingEnabled"`  // e.g. Is SMB Signing Enabled?
 	SigningRequired     bool   `json:"signingRequired"` // e.g. Is SMB Signing Required?
 	OSVersion           string `json:"osVersion"`
-	NetBIOSComputerName string `json:"netBIOSComputerName"`
-	NetBIOSDomainName   string `json:"netBIOSDomainName"`
-	DNSComputerName     string `json:"dnsComputerName"`
-	DNSDomainName       string `json:"dnsDomainName"`
-	ForestName          string `json:"forestName"`
+	NetBIOSComputerName string `json:"netBIOSComputerName,omitempty"`
+	NetBIOSDomainName   string `json:"netBIOSDomainName,omitempty"`
+	DNSComputerName     string `json:"dnsComputerName,omitempty"`
+	DNSDomainName       string `json:"dnsDomainName,omitempty"`
+	ForestName          string `json:"forestName,omitempty"`
 }
 
 func (e ServiceSMB) Type() string { return ProtoSMB }
@@ -271,12 +379,6 @@ type ServiceIPSEC struct {
 
 func (e ServiceIPSEC) Type() string { return ProtoIPSEC }
 
-type ServiceRPC struct {
-	Info string `json:"info"`
-}
-
-func (e ServiceRPC) Type() string { return ProtoRPC }
-
 type ServiceMSSQL struct {
 }
 
@@ -319,19 +421,21 @@ type ServiceSMTPS struct {
 
 func (e ServiceSMTPS) Type() string { return ProtoSMTPS }
 
+type ServiceStun struct {
+	Info string `json:"info"`
+}
+
+func (e ServiceStun) Type() string { return ProtoStun }
+
 type ServiceSSH struct {
-	Banner string `json:"banner"`
+	Banner             string `json:"banner"`
+	Algo               string `json:"algo"`
+	HostKey            string `json:"hostKey,omitempty"`
+	HostKeyType        string `json:"hostKeyType,omitempty"`
+	HostKeyFingerprint string `json:"hostKeyFingerprint,omitempty"`
 }
 
 func (e ServiceSSH) Type() string { return ProtoSSH }
-
-type ServiceNmap struct {
-	NmapOutput string `json:"nmapOutput"`
-	Service    string `json:"service"`
-	Version    string `json:"version"`
-}
-
-func (e ServiceNmap) Type() string { return ProtoNmap }
 
 type ServiceLDAP struct{}
 
@@ -344,10 +448,6 @@ func (e ServiceLDAPS) Type() string { return ProtoLDAPS }
 type ServiceKafka struct{}
 
 func (e ServiceKafka) Type() string { return ProtoKafka }
-
-type ServiceKerberos struct{}
-
-func (e ServiceKerberos) Type() string { return ProtoKerberos }
 
 type ServiceOracle struct {
 	Info string `json:"info"`

@@ -134,7 +134,7 @@ func Run(conn net.Conn, timeout time.Duration, tls bool, target plugins.Target) 
 
 	check, err := testConnectRequest(conn, mqttConnect5, timeout)
 	if check && err == nil {
-		return plugins.CreateServiceFrom(target, plugins.ServiceMQTT{}, tls, "5.0"), nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceMQTT{}, tls, "5.0", plugins.TCP), nil
 	} else if check && err != nil {
 		return nil, nil
 	}

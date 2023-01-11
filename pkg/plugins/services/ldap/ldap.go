@@ -166,7 +166,7 @@ func (p *LDAPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	}
 
 	if isLDAP {
-		return plugins.CreateServiceFrom(target, plugins.ServiceLDAP{}, false, ""), nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceLDAP{}, false, "", plugins.TCP), nil
 	}
 	return nil, nil
 }
@@ -190,7 +190,7 @@ func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	}
 
 	if isLDAPS {
-		return plugins.CreateServiceFrom(target, plugins.ServiceLDAPS{}, true, ""), nil
+		return plugins.CreateServiceFrom(target, plugins.ServiceLDAPS{}, true, "", plugins.TCP), nil
 	}
 	return nil, nil
 }

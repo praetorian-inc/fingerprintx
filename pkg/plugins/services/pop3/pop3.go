@@ -93,7 +93,7 @@ func (p *POP3Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	payload := plugins.ServicePOP3{
 		Banner: result,
 	}
-	return plugins.CreateServiceFrom(target, payload, false, ""), nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *TLSPlugin) PortPriority(port uint16) bool {
@@ -113,7 +113,7 @@ func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	payload := plugins.ServicePOP3{
 		Banner: result,
 	}
-	return plugins.CreateServiceFrom(target, payload, true, ""), nil
+	return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCP), nil
 }
 
 func (p *POP3Plugin) Name() string {

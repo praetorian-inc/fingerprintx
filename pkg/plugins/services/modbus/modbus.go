@@ -105,10 +105,10 @@ func (p *MODBUSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.
 		// successful request, validate contents
 		if response[ModbusHeaderLength] == ModbusDiscreteInputCode {
 			if response[ModbusHeaderLength+1] == 1 && (response[ModbusHeaderLength+2]>>1) == 0x00 {
-				return plugins.CreateServiceFrom(target, plugins.ServiceModbus{}, false, ""), nil
+				return plugins.CreateServiceFrom(target, plugins.ServiceModbus{}, false, "", plugins.TCP), nil
 			}
 		} else if response[ModbusHeaderLength] == ModbusDiscreteInputCode+ModbusErrorAddend {
-			return plugins.CreateServiceFrom(target, plugins.ServiceModbus{}, false, ""), nil
+			return plugins.CreateServiceFrom(target, plugins.ServiceModbus{}, false, "", plugins.TCP), nil
 		}
 	}
 	return nil, nil

@@ -51,7 +51,7 @@ func (p *FTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		Banner: string(response),
 	}
 
-	return plugins.CreateServiceFrom(target, payload, false, ""), nil
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *FTPPlugin) PortPriority(i uint16) bool {

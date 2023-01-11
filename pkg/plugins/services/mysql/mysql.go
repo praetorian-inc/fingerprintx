@@ -88,7 +88,7 @@ func (p *MYSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 			ErrorMessage: "",
 			ErrorCode:    0,
 		}
-		return plugins.CreateServiceFrom(target, payload, false, mysqlVersionStr), nil
+		return plugins.CreateServiceFrom(target, payload, false, mysqlVersionStr, plugins.TCP), nil
 	}
 
 	errorStr, errorCode, err := CheckErrorMessagePacket(response)
@@ -98,7 +98,7 @@ func (p *MYSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 			ErrorMessage: errorStr,
 			ErrorCode:    errorCode,
 		}
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	return nil, nil
 }

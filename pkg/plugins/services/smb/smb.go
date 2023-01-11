@@ -361,7 +361,7 @@ func (p *SMBPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		return nil, nil
 	}
 
-	return plugins.CreateServiceFrom(target, info, false, info.OSVersion), nil
+	return plugins.CreateServiceFrom(target, info, false, info.OSVersion, plugins.TCP), nil
 }
 
 func (p *SMBPlugin) Name() string {

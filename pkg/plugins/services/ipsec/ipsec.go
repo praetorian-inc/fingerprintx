@@ -112,7 +112,7 @@ func (f *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 			MessageID:    messageID,
 		}
 
-		return plugins.CreateServiceFrom(target, payload, false, ""), nil
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 	}
 	return nil, nil
 }

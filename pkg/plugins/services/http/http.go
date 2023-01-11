@@ -121,7 +121,7 @@ func (p *HTTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 		payload.Technologies = technologies
 	}
 
-	return plugins.CreateServiceFrom(target, payload, false, resp.Header.Get("Server")), nil
+	return plugins.CreateServiceFrom(target, payload, false, resp.Header.Get("Server"), plugins.TCP), nil
 }
 
 func (p *HTTPSPlugin) PortPriority(port uint16) bool {
@@ -176,7 +176,7 @@ func (p *HTTPSPlugin) Run(
 		payload.Technologies = technologies
 	}
 
-	return plugins.CreateServiceFrom(target, payload, true, resp.Header.Get("Server")), nil
+	return plugins.CreateServiceFrom(target, payload, true, resp.Header.Get("Server"), plugins.TCP), nil
 }
 
 func (p *HTTPPlugin) Type() plugins.Protocol {

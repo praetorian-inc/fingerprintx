@@ -87,7 +87,7 @@ func (p *VNCPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		return nil, nil
 	}
 
-	return plugins.CreateServiceFrom(target, plugins.ServiceVNC{}, false, info), nil
+	return plugins.CreateServiceFrom(target, plugins.ServiceVNC{}, false, info, plugins.TCP), nil
 }
 
 func (p *VNCPlugin) Name() string {
