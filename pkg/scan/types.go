@@ -16,8 +16,6 @@ package scan
 
 import (
 	"time"
-
-	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 )
 
 type Config struct {
@@ -26,15 +24,9 @@ type Config struct {
 
 	FastMode bool
 
-	// The timeout value should be positive.
-	// The behavior for non positive timeout values is undefined.
 	// The timeout specifies how long certain tasks should wait during the scanning process.
 	// This may include the timeouts set on the handshake process and the time to wait for a response to return.
-	// However, the exact use of the timeout is not defined.
 	DefaultTimeout time.Duration
-
-	// If the service is not in the map, the default timeout is used.
-	TimeoutOverride map[plugins.PluginID]time.Duration
 
 	// Prints logging messages to stderr
 	Verbose bool

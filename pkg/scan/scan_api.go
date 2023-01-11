@@ -48,7 +48,7 @@ func ScanTargets(targets []plugins.Target, config Config) ([]plugins.Service, er
 		result, err := config.simpleScanTarget(target, true)
 		if err == nil && result != nil {
 			results = append(results, *result)
-		} else if err == nil {
+		} else {
 			unidentifiedServices = append(unidentifiedServices, target)
 		}
 		if config.Verbose && err != nil {
@@ -62,9 +62,7 @@ func ScanTargets(targets []plugins.Target, config Config) ([]plugins.Service, er
 	}
 
 	// slow lane scanning
-	// for targets in unidentifiedTargets
 	for _, target := range unidentifiedServices {
-		//if !identifiedServices[target] {
 		result, err := config.simpleScanTarget(target, false)
 		if err == nil && result != nil {
 			results = append(results, *result)
@@ -72,7 +70,6 @@ func ScanTargets(targets []plugins.Target, config Config) ([]plugins.Service, er
 		if config.Verbose && err != nil {
 			log.Printf("%s\n", err)
 		}
-		//}
 	}
 
 	return results, nil

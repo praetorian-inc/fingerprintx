@@ -25,20 +25,6 @@ import (
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 )
 
-type pluginPanicError struct {
-	config Config
-	plugin plugins.Plugin
-	err    any
-}
-
-func (w *pluginPanicError) Error() string {
-	return fmt.Sprintf(
-		"Plugin %v panicked: %v",
-		plugins.CreatePluginID(w.plugin),
-		w.err,
-	)
-}
-
 var dialer = &net.Dialer{
 	Timeout: 2 * time.Second,
 }
@@ -80,7 +66,7 @@ func (c *Config) UDPScanTarget(target plugins.Target) (*plugins.Service, error) 
 			return nil, fmt.Errorf("unable to connect, err = %w", err)
 		}
 		result, err := simplePluginRunner(conn, target, c, plugin)
-		if result != nil {
+		if result != nil && err != nil {
 			return result, nil
 		}
 	}
@@ -115,8 +101,14 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 					return nil, fmt.Errorf("unable to connect, err = %w", err)
 				}
 				result, err := simplePluginRunner(conn, target, c, plugin)
-				// TODO check err ??
-				if result != nil {
+				if err != nil && c.Verbose {
+					log.Printf(
+						"error: %v scanning %v\n",
+						err,
+						target.Address.String(),
+					)
+				}
+				if result != nil && err != nil {
 					return result, nil
 				}
 			}
@@ -140,8 +132,14 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 				// Invoke the plugin and return the discovered service event if
 				// we are successful
 				result, err := simplePluginRunner(tlsConn, target, c, plugin)
-				// TODO check err
-				if result != nil {
+				if err != nil && c.Verbose {
+					log.Printf(
+						"error: %v scanning %v\n",
+						err,
+						target.Address.String(),
+					)
+				}
+				if result != nil && err != nil {
 					// identified plugin match
 					return result, nil
 				}
@@ -158,7 +156,6 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 		// slow lane. However, in the slow lane we want to also try the TCP plugins
 		// just to be safe.
 		if fastMode {
-			// TODO check this??
 			return nil, nil
 		}
 	}
@@ -173,7 +170,14 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 				return nil, fmt.Errorf("unable to connect, err = %w", err)
 			}
 			result, err := simplePluginRunner(conn, target, c, plugin)
-			if result != nil {
+			if err != nil && c.Verbose {
+				log.Printf(
+					"error: %v scanning %v\n",
+					err,
+					target.Address.String(),
+				)
+			}
+			if result != nil && err != nil {
 				// identified plugin match
 				return result, nil
 			}
@@ -200,7 +204,7 @@ func simplePluginRunner(
 		)
 	}
 
-	result, err := plugin.Run(conn, 1*time.Second, target)
+	result, err := plugin.Run(conn, config.DefaultTimeout, target)
 
 	// Log probe completion.
 	if config.Verbose {
@@ -212,7 +216,6 @@ func simplePluginRunner(
 		)
 	}
 	return result, err
-
 }
 
 func DialTLS(ip string, port uint16) (net.Conn, error) {

@@ -15,10 +15,7 @@
 package dhcp
 
 import (
-	// "os"
 	"testing"
-
-	// "github.com/ory/dockertest/v3"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/test"
 )

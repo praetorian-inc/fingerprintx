@@ -71,14 +71,15 @@ func Report(services []plugins.Service) error {
 	for _, service := range services {
 		switch outputFormat {
 		case JSON:
-			data, err := json.Marshal(service)
-			if err != nil {
+			data, jerr := json.Marshal(service)
+			if jerr != nil {
 				return err
 			}
 			log.Println(string(data))
 		case CSV:
 			portStr := strconv.FormatInt(int64(service.Port), 10)
-			err = csvWriter.Write([]string{service.Host, service.IP, portStr, service.Protocol, strconv.FormatBool(service.TLS), string(service.Raw)})
+			err = csvWriter.Write([]string{service.Host, service.IP, portStr, service.Protocol,
+				strconv.FormatBool(service.TLS), string(service.Raw)})
 			if err != nil {
 				return err
 			}

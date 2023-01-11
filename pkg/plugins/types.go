@@ -92,123 +92,123 @@ func (e Service) Metadata() Metadata {
 	switch e.Protocol {
 	case ProtoFTP:
 		var p ServiceFTP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoPostgreSQL:
 		var p ServicePostgreSQL
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoVNC:
 		var p ServiceVNC
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoTelnet:
 		var p ServiceTelnet
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRedis:
 		var p ServiceRedis
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoHTTP:
 		var p ServiceHTTP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoHTTPS:
 		var p ServiceHTTPS
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoHTTP2:
 		var p ServiceHTTP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoSMB:
 		var p ServiceSMB
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRDP:
 		var p ServiceRDP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRPC:
 		var p ServiceRPC
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoMSSQL:
 		var p ServiceMSSQL
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoNetbios:
 		var p ServiceNetbios
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoKafka:
 		var p ServiceKafka
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoOracle:
 		var p ServiceOracle
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoMySQL:
 		var p ServiceMySQL
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoSMTP:
 		var p ServiceSMTP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoSMTPS:
 		var p ServiceSMTPS
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoLDAP:
 		var p ServiceLDAP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoModbus:
 		var p ServiceModbus
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoLDAPS:
 		var p ServiceLDAPS
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoSSH:
 		var p ServiceSSH
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoIMAP:
 		var p ServiceIMAP
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRsync:
 		var p ServiceRsync
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRtsp:
 		var p ServiceRtsp
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoIMAPS:
 		var p ServiceIMAPS
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoMQTT:
 		var p ServiceMQTT
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoPOP3:
 		var p ServicePOP3
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoPOP3S:
 		var p ServicePOP3S
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	default:
 		var p ServiceUnknown
-		json.Unmarshal(e.Raw, &p)
+		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	}
 }
@@ -281,7 +281,6 @@ func (e ServiceHTTPS) Type() string { return ProtoHTTPS }
 
 type ServiceRDP struct {
 	OSFingerprint       string `json:"fingerprint"` // e.g. Windows Server 2016 or 2019
-	Info                string `json:"info"`        // map[string]any
 	OSVersion           string `json:"osVersion,omitempty"`
 	TargetName          string `json:"targetName,omitempty"`
 	NetBIOSComputerName string `json:"netBIOSComputerName,omitempty"`

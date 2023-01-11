@@ -73,7 +73,7 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVarP(&config.verbose, "verbose", "v", false, "verbose mode")
 	rootCmd.PersistentFlags().
-		IntVarP(&config.timeout, "timeout", "w", 500, "timeout (milliseconds)")
+		IntVarP(&config.timeout, "timeout", "w", 2000, "timeout (milliseconds)")
 }
 
 func Execute() {

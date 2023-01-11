@@ -26,7 +26,6 @@ import (
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
-
 	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 )
 

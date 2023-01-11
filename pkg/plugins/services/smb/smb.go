@@ -181,9 +181,7 @@ func DetectSMBv2(conn net.Conn, timeout time.Duration) (*plugins.ServiceSMB, err
 	if negotiateResponseData.SecurityMode&2 == 2 {
 		signingRequired = true
 	}
-	//info["signingEnabled"] = strconv.FormatBool(signingEnabled)
 	info.SigningEnabled = signingEnabled
-	//info["signingRequired"] = strconv.FormatBool(signingRequired)
 	info.SigningRequired = signingRequired
 
 	/**

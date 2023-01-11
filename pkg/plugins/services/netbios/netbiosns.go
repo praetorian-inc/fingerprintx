@@ -59,7 +59,8 @@ func (p *Plugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target
 
 	stringBegin := strings.Index(string(response), "\x00\x00\x00\x00\x00") + 7
 	stringEnd := strings.Index(string(response), "\x20\x20\x20")
-	if stringBegin == -1 || stringEnd == -1 || stringEnd < stringBegin || stringBegin >= len(response) || stringEnd >= len(response) {
+	if stringBegin == -1 || stringEnd == -1 || stringEnd < stringBegin ||
+		stringBegin >= len(response) || stringEnd >= len(response) {
 		return nil, nil
 	}
 	payload := plugins.ServiceNetbios{
