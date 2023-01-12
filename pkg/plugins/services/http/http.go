@@ -166,7 +166,7 @@ func (p *HTTPSPlugin) Run(
 
 	technologies, _ := p.FingerprintResponse(resp)
 
-	payload := plugins.ServiceHTTP{
+	payload := plugins.ServiceHTTPS{
 		Status:          resp.Status,
 		StatusCode:      resp.StatusCode,
 		ResponseHeaders: resp.Header,

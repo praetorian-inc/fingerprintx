@@ -66,7 +66,7 @@ func (c *Config) UDPScanTarget(target plugins.Target) (*plugins.Service, error) 
 			return nil, fmt.Errorf("unable to connect, err = %w", err)
 		}
 		result, err := simplePluginRunner(conn, target, c, plugin)
-		if result != nil && err != nil {
+		if result != nil && err == nil {
 			return result, nil
 		}
 	}
@@ -108,7 +108,7 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 						target.Address.String(),
 					)
 				}
-				if result != nil && err != nil {
+				if result != nil && err == nil {
 					return result, nil
 				}
 			}
@@ -139,7 +139,7 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 						target.Address.String(),
 					)
 				}
-				if result != nil && err != nil {
+				if result != nil && err == nil {
 					// identified plugin match
 					return result, nil
 				}
@@ -177,7 +177,7 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 					target.Address.String(),
 				)
 			}
-			if result != nil && err != nil {
+			if result != nil && err == nil {
 				// identified plugin match
 				return result, nil
 			}
