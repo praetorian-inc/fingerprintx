@@ -79,7 +79,7 @@ func (c *Config) UDPScanTarget(target plugins.Target) (*plugins.Service, error) 
 // only attempts to fingerprint services by mapping them to their default port.
 // The slow lane isn't as focused on performance and instead tries to be as
 // accurate as possible.
-func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugins.Service, error) {
+func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, error) {
 	ip := target.Address.Addr().String()
 	port := target.Address.Port()
 
@@ -93,7 +93,7 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 	//
 	// If the port has multiple default mappings we only run the first one
 	// so in some cases we still bail out to the slow path.
-	if fastMode {
+	if c.FastMode {
 		for _, plugin := range sortedTCPPlugins {
 			if plugin.PortPriority(port) {
 				conn, err := DialTCP(ip, port)
@@ -128,7 +128,7 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 			// itself as being the one of the default services
 			// associated with this port. In slow, mode we need to
 			// run every registered plugin.
-			if plugin.PortPriority(port) || !fastMode {
+			if plugin.PortPriority(port) || !c.FastMode {
 				// Invoke the plugin and return the discovered service event if
 				// we are successful
 				result, err := simplePluginRunner(tlsConn, target, c, plugin)
@@ -155,7 +155,7 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 		// If we fail to fingerprint the service in fast lane we just bail out to the
 		// slow lane. However, in the slow lane we want to also try the TCP plugins
 		// just to be safe.
-		if fastMode {
+		if c.FastMode {
 			return nil, nil
 		}
 	}
@@ -164,7 +164,7 @@ func (c *Config) simpleScanTarget(target plugins.Target, fastMode bool) (*plugin
 		// In fast mode we only run the corresponding TCP port plugin if it is
 		// associated with the default port for the service. Within the slow path
 		// we run every plugin regardless of the default port mapping.
-		if plugin.PortPriority(port) || !fastMode {
+		if plugin.PortPriority(port) || !c.FastMode {
 			conn, err := DialTCP(ip, port)
 			if err != nil {
 				return nil, fmt.Errorf("unable to connect, err = %w", err)
