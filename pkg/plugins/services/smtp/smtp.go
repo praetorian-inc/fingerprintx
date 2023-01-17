@@ -41,7 +41,7 @@ func init() {
 }
 
 func (p *SMTPPlugin) PortPriority(port uint16) bool {
-	return port == 25 || port == 587
+	return port == 25 || port == 587 || port == 465 || port == 2525
 }
 
 func handleSMTPConn(response []byte) (bool, bool) {
