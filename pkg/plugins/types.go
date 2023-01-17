@@ -280,7 +280,7 @@ type ServiceHTTPS struct {
 func (e ServiceHTTPS) Type() string { return ProtoHTTPS }
 
 type ServiceRDP struct {
-	OSFingerprint       string `json:"fingerprint"` // e.g. Windows Server 2016 or 2019
+	OSFingerprint       string `json:"fingerprint,omitempty"` // e.g. Windows Server 2016 or 2019
 	OSVersion           string `json:"osVersion,omitempty"`
 	TargetName          string `json:"targetName,omitempty"`
 	NetBIOSComputerName string `json:"netBIOSComputerName,omitempty"`

@@ -83,99 +83,75 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 	ip := target.Address.Addr().String()
 	port := target.Address.Port()
 
-	// Some services leverage TCP and TLS services on the
-	// same port. This causes a weird bug with certain services like RDP
-	// where the handshake seems to be different when TLS is leveraged. We
-	// will eventually properly fingerprint the service in the slow lane,
-	// but only after calling back to TCP plugins and running all the
-	// corresponding TLS plugins. This is a hack to get around this edge
-	// case as an optimization.
-	//
-	// If the port has multiple default mappings we only run the first one
-	// so in some cases we still bail out to the slow path.
-	if c.FastMode {
-		for _, plugin := range sortedTCPPlugins {
-			if plugin.PortPriority(port) {
-				conn, err := DialTCP(ip, port)
-				if err != nil {
-					return nil, fmt.Errorf("unable to connect, err = %w", err)
-				}
-				result, err := simplePluginRunner(conn, target, c, plugin)
-				if err != nil && c.Verbose {
-					log.Printf(
-						"error: %v scanning %v\n",
-						err,
-						target.Address.String(),
-					)
-				}
-				if result != nil && err == nil {
-					return result, nil
-				}
-			}
-		}
-	}
-
-	// We attempt an initial TLS connection to the target port to
-	// determine if the service running on that port leverages TLS as a
-	// transport. If this is true we can exclude all plugins that don't
-	// support TLS as an optimization.
-
-	tlsConn, err := DialTLS(ip, port)
-	isTLS := err == nil
-	if isTLS {
-		for _, plugin := range sortedTCPTLSPlugins {
-			// If we are running in fast mode we only invoke a plugin if it registers
-			// itself as being the one of the default services
-			// associated with this port. In slow, mode we need to
-			// run every registered plugin.
-			if plugin.PortPriority(port) || !c.FastMode {
-				// Invoke the plugin and return the discovered service event if
-				// we are successful
-				result, err := simplePluginRunner(tlsConn, target, c, plugin)
-				if err != nil && c.Verbose {
-					log.Printf(
-						"error: %v scanning %v\n",
-						err,
-						target.Address.String(),
-					)
-				}
-				if result != nil && err == nil {
-					// identified plugin match
-					return result, nil
-				}
-
-				// Unfortunately, if we run a plugin and it fails we have to create an entirely
-				// new TLS connection in order to invoke the next plugin.
-				tlsConn, err = DialTLS(ip, port)
-				if err != nil {
-					return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
-				}
-			}
-		}
-		// If we fail to fingerprint the service in fast lane we just bail out to the
-		// slow lane. However, in the slow lane we want to also try the TCP plugins
-		// just to be safe.
-		if c.FastMode {
-			return nil, nil
-		}
-	}
-
+	// first check the default port mappings for TCP / TLS
 	for _, plugin := range sortedTCPPlugins {
-		// In fast mode we only run the corresponding TCP port plugin if it is
-		// associated with the default port for the service. Within the slow path
-		// we run every plugin regardless of the default port mapping.
-		if plugin.PortPriority(port) || !c.FastMode {
+		if plugin.PortPriority(port) {
 			conn, err := DialTCP(ip, port)
 			if err != nil {
 				return nil, fmt.Errorf("unable to connect, err = %w", err)
 			}
 			result, err := simplePluginRunner(conn, target, c, plugin)
 			if err != nil && c.Verbose {
-				log.Printf(
-					"error: %v scanning %v\n",
-					err,
-					target.Address.String(),
-				)
+				log.Printf("error: %v scanning %v\n", err, target.Address.String())
+			}
+			if result != nil && err == nil {
+				return result, nil
+			}
+		}
+	}
+
+	tlsConn, err := DialTLS(ip, port)
+	isTLS := err == nil
+	if isTLS {
+		for _, plugin := range sortedTCPTLSPlugins {
+			if plugin.PortPriority(port) {
+				result, err := simplePluginRunner(tlsConn, target, c, plugin)
+				if err != nil && c.Verbose {
+					log.Printf("error: %v scanning %v\n", err, target.Address.String())
+				}
+				if result != nil && err == nil {
+					// identified plugin match
+					return result, nil
+				}
+				tlsConn, err = DialTLS(ip, port)
+				if err != nil {
+					return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
+				}
+			}
+		}
+	}
+
+	// if we're fast mode, return (because fast mode only checks the default port service mapping)
+	if c.FastMode {
+		return nil, nil
+	}
+
+	// go through each service mapping and check it
+
+	if isTLS {
+		for _, plugin := range sortedTCPTLSPlugins {
+			result, err := simplePluginRunner(tlsConn, target, c, plugin)
+			if err != nil && c.Verbose {
+				log.Printf("error: %v scanning %v\n", err, target.Address.String())
+			}
+			if result != nil && err == nil {
+				// identified plugin match
+				return result, nil
+			}
+			tlsConn, err = DialTLS(ip, port)
+			if err != nil {
+				return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
+			}
+		}
+	} else {
+		for _, plugin := range sortedTCPPlugins {
+			conn, err := DialTCP(ip, port)
+			if err != nil {
+				return nil, fmt.Errorf("unable to connect, err = %w", err)
+			}
+			result, err := simplePluginRunner(conn, target, c, plugin)
+			if err != nil && c.Verbose {
+				log.Printf("error: %v scanning %v\n", err, target.Address.String())
 			}
 			if result != nil && err == nil {
 				// identified plugin match
@@ -196,8 +172,7 @@ func simplePluginRunner(
 ) (*plugins.Service, error) {
 	// Log probe start.
 	if config.Verbose {
-		log.Printf(
-			"%v -> scanning  %v (%v)\n",
+		log.Printf("%v %v-> scanning %v\n",
 			target.Address.String(),
 			target.Host,
 			plugins.CreatePluginID(plugin),
@@ -209,7 +184,7 @@ func simplePluginRunner(
 	// Log probe completion.
 	if config.Verbose {
 		log.Printf(
-			"%v (%v)-> completed %v\n",
+			"%v %v-> completed %v\n",
 			target.Address.String(),
 			target.Host,
 			plugins.CreatePluginID(plugin),
