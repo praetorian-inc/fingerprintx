@@ -32,9 +32,22 @@ var dialer = &net.Dialer{
 var sortedTCPPlugins = make([]plugins.Plugin, 0)
 var sortedTCPTLSPlugins = make([]plugins.Plugin, 0)
 var sortedUDPPlugins = make([]plugins.Plugin, 0)
+var tlsConfig = tls.Config{} //nolint:gosec
 
 func init() {
 	setupPlugins()
+	cipherSuites := make([]uint16, 0)
+
+	for _, suite := range tls.CipherSuites() {
+		cipherSuites = append(cipherSuites, suite.ID)
+	}
+
+	for _, suite := range tls.InsecureCipherSuites() {
+		cipherSuites = append(cipherSuites, suite.ID)
+	}
+	tlsConfig.InsecureSkipVerify = true //nolint:gosec
+	tlsConfig.CipherSuites = cipherSuites
+	tlsConfig.MinVersion = tls.VersionTLS10
 }
 
 func setupPlugins() {
@@ -195,7 +208,8 @@ func simplePluginRunner(
 
 func DialTLS(ip string, port uint16) (net.Conn, error) {
 	addr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
-	conn, err := tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{InsecureSkipVerify: true}) //nolint:gosec
+	conn, err := tls.DialWithDialer(dialer, "tcp", addr, &tlsConfig)
+
 	return conn, err
 }
 
