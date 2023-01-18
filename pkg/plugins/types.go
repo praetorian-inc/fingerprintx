@@ -265,7 +265,7 @@ type ServiceHTTP struct {
 	Status          string      `json:"status"`     // e.g. "200 OK"
 	StatusCode      int         `json:"statusCode"` // e.g. 200
 	ResponseHeaders http.Header `json:"responseHeaders"`
-	Technologies    []string    `json:"technologies"`
+	Technologies    []string    `json:"technologies,omitempty"`
 }
 
 func (e ServiceHTTP) Type() string { return ProtoHTTP }
@@ -274,13 +274,13 @@ type ServiceHTTPS struct {
 	Status          string      `json:"status"`     // e.g. "200 OK"
 	StatusCode      int         `json:"statusCode"` // e.g. 200
 	ResponseHeaders http.Header `json:"responseHeaders"`
-	Technologies    []string    `json:"technologies"`
+	Technologies    []string    `json:"technologies,omitempty"`
 }
 
 func (e ServiceHTTPS) Type() string { return ProtoHTTPS }
 
 type ServiceRDP struct {
-	OSFingerprint       string `json:"fingerprint"` // e.g. Windows Server 2016 or 2019
+	OSFingerprint       string `json:"fingerprint,omitempty"` // e.g. Windows Server 2016 or 2019
 	OSVersion           string `json:"osVersion,omitempty"`
 	TargetName          string `json:"targetName,omitempty"`
 	NetBIOSComputerName string `json:"netBIOSComputerName,omitempty"`
@@ -427,11 +427,12 @@ type ServiceStun struct {
 func (e ServiceStun) Type() string { return ProtoStun }
 
 type ServiceSSH struct {
-	Banner             string `json:"banner"`
-	Algo               string `json:"algo"`
-	HostKey            string `json:"hostKey,omitempty"`
-	HostKeyType        string `json:"hostKeyType,omitempty"`
-	HostKeyFingerprint string `json:"hostKeyFingerprint,omitempty"`
+	Banner              string `json:"banner"`
+	PasswordAuthEnabled bool   `json:"passwordAuthEnabled"`
+	Algo                string `json:"algo"`
+	HostKey             string `json:"hostKey,omitempty"`
+	HostKeyType         string `json:"hostKeyType,omitempty"`
+	HostKeyFingerprint  string `json:"hostKeyFingerprint,omitempty"`
 }
 
 func (e ServiceSSH) Type() string { return ProtoSSH }

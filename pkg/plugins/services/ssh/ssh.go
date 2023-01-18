@@ -196,6 +196,8 @@ func checkAlgo(data []byte) (map[string]string, error) {
 
 func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	response, err := utils.Recv(conn, timeout)
+	passwordAuth := false
+
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +225,20 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 
+	// check auth methods
+	conf := ssh.ClientConfig{}
+	conf.Auth = nil
+	conf.Auth = append(conf.Auth, ssh.Password("admin"))
+	conf.User = "admin"
+	conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+
+	authClient, err := ssh.Dial("tcp", target.Address.String(), &conf)
+
+	passwordAuth = strings.Contains(err.Error(), "password")
+	if authClient != nil {
+		authClient.Close()
+	}
+
 	sshConfig := &ssh.ClientConfig{}
 	fullConf := *sshConfig
 	fullConf.SetDefaults()
@@ -242,8 +258,9 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	_, err = io.ReadFull(rand.Reader, sendMsg.Cookie[:])
 	if err != nil {
 		payload := plugins.ServiceSSH{
-			Banner: banner,
-			Algo:   fmt.Sprintf("%s", algo),
+			Banner:              banner,
+			PasswordAuthEnabled: passwordAuth,
+			Algo:                fmt.Sprintf("%s", algo),
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
@@ -259,8 +276,9 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	err = ssh.PushPacket(t.HandshakeTransport, packetCopy)
 	if err != nil {
 		payload := plugins.ServiceSSH{
-			Banner: banner,
-			Algo:   fmt.Sprintf("%s", algo),
+			Banner:              banner,
+			PasswordAuthEnabled: passwordAuth,
+			Algo:                fmt.Sprintf("%s", algo),
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
@@ -271,8 +289,9 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 
 	if err != nil {
 		payload := plugins.ServiceSSH{
-			Banner: banner,
-			Algo:   fmt.Sprintf("%s", algo),
+			Banner:              banner,
+			PasswordAuthEnabled: passwordAuth,
+			Algo:                fmt.Sprintf("%s", algo),
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
@@ -293,8 +312,9 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	t.Algorithms, err = ssh.FindAgreedAlgorithms(false, &sendMsg, otherInit)
 	if err != nil {
 		payload := plugins.ServiceSSH{
-			Banner: banner,
-			Algo:   fmt.Sprintf("%s", algo),
+			Banner:              banner,
+			PasswordAuthEnabled: passwordAuth,
+			Algo:                fmt.Sprintf("%s", algo),
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
@@ -310,16 +330,18 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	result, err := ssh.Clients(t, kex, &magics)
 	if err != nil {
 		payload := plugins.ServiceSSH{
-			Banner: banner,
-			Algo:   fmt.Sprintf("%s", algo),
+			Banner:              banner,
+			PasswordAuthEnabled: passwordAuth,
+			Algo:                fmt.Sprintf("%s", algo),
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 	hostKey, err := ssh.ParsePublicKey(result.HostKey)
 	if err != nil {
 		payload := plugins.ServiceSSH{
-			Banner: banner,
-			Algo:   fmt.Sprintf("%s", algo),
+			Banner:              banner,
+			PasswordAuthEnabled: passwordAuth,
+			Algo:                fmt.Sprintf("%s", algo),
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
@@ -327,11 +349,12 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	base64HostKey := base64.StdEncoding.EncodeToString(result.HostKey)
 
 	payload := plugins.ServiceSSH{
-		Banner:             banner,
-		Algo:               fmt.Sprintf("%s", algo),
-		HostKey:            base64HostKey,
-		HostKeyType:        hostKey.Type(),
-		HostKeyFingerprint: fingerprint,
+		Banner:              banner,
+		PasswordAuthEnabled: passwordAuth,
+		Algo:                fmt.Sprintf("%s", algo),
+		HostKey:             base64HostKey,
+		HostKeyType:         hostKey.Type(),
+		HostKeyFingerprint:  fingerprint,
 	}
 	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
