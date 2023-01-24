@@ -231,6 +231,26 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	conf.Auth = append(conf.Auth, ssh.Password("admin"))
 	conf.User = "admin"
 	conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	// use all the ciphers supported by the go crypto ssh library
+	conf.KeyExchanges = append(conf.KeyExchanges,
+		"diffie-hellman-group-exchange-sha256",
+		"diffie-hellman-group-exchange-sha1",
+		"diffie-hellman-group1-sha1",
+		"diffie-hellman-group14-sha1",
+		"diffie-hellman-group14-sha256",
+		"ecdh-sha2-nistp256",
+		"ecdh-sha2-nistp384",
+		"ecdh-sha2-nistp521",
+		"curve25519-sha256@libssh.org",
+		"curve25519-sha256",
+	)
+	conf.Ciphers = append(conf.Ciphers,
+		"aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-gcm@openssh.com",
+		"chacha20-poly1305@openssh.com",
+		"arcfour256", "arcfour128", "arcfour",
+		"aes128-cbc",
+		"3des-cbc",
+	)
 
 	authClient, err := ssh.Dial("tcp", target.Address.String(), &conf)
 
