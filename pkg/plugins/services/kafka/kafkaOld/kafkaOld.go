@@ -68,7 +68,7 @@ func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 }
 
 func (p *TLSPlugin) PortPriority(i uint16) bool {
-	return i == 9092
+	return i == 9093
 }
 
 func (p *TLSPlugin) Name() string {
