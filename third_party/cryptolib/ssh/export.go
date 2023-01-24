@@ -103,6 +103,9 @@ func FindAgreedAlgorithms(isClient bool, clientKexInit, serverKexInit *KexInitMs
 		Reserved:                serverKexInit.Reserved,
 	}
 	algorithm, err := findAgreedAlgorithms(isClient, &ClientKexInit, &ServerKexInit)
+	if err != nil {
+		return nil, err
+	}
 	algorithmRet := Algorithms{Kex: algorithm.kex, HostKey: algorithm.hostKey, w: algorithm.w, r: algorithm.r}
 	return &algorithmRet, err
 }

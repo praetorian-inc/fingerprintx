@@ -174,7 +174,7 @@ type algorithms struct {
 	r       directionAlgorithms
 }
 
-func findAgreedAlgorithms(isClient bool, clientKexInit, serverKexInit *kexInitMsg) (algs *algorithms, err error) {
+func findAgreedAlgorithms(isClient bool, clientKexInit *kexInitMsg, serverKexInit *kexInitMsg) (algs *algorithms, err error) {
 	result := &algorithms{}
 
 	result.kex, err = findCommon("key exchange", clientKexInit.KexAlgos, serverKexInit.KexAlgos)
