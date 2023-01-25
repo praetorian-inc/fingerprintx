@@ -17,6 +17,7 @@ package linuxrpc
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"time"
 
@@ -116,6 +117,9 @@ func DetectRPCInfoService(conn net.Conn, lookupResponse *plugins.ServiceRPC, tim
 }
 
 func parseRPCInfo(response []byte, lookupResponse *plugins.ServiceRPC) error {
+	if len(response) < 0x20 {
+		return fmt.Errorf("invalid rpc length")
+	}
 	response = response[0x20:]
 	valueFollows := 1
 

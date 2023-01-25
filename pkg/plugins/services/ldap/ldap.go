@@ -150,6 +150,9 @@ func DetectLDAP(conn net.Conn, timeout time.Duration) (bool, error) {
 
 	// In other versions, bytes at response[1:5] may differ so we remove these bytes and
 	// perform the expected header check against this 'otherVersionResponse' as well
+	if len(response) < 7 {
+		return false, nil
+	}
 	otherVersionResponse := append([]byte{response[0]}, response[5]+4)
 	otherVersionResponse = append(otherVersionResponse, response[6:]...)
 
