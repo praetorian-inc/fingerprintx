@@ -113,7 +113,7 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 		}
 	}
 
-	tlsConn, err := DialTLS(ip, port)
+	tlsConn, err := DialTLS(target)
 	isTLS := err == nil
 	if isTLS {
 		for _, plugin := range sortedTCPTLSPlugins {
@@ -126,7 +126,7 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 					// identified plugin match
 					return result, nil
 				}
-				tlsConn, err = DialTLS(ip, port)
+				tlsConn, err = DialTLS(target)
 				if err != nil {
 					return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
 				}
@@ -143,6 +143,10 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 
 	if isTLS {
 		for _, plugin := range sortedTCPTLSPlugins {
+			tlsConn, err = DialTLS(target)
+			if err != nil {
+				return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
+			}
 			result, err := simplePluginRunner(tlsConn, target, c, plugin)
 			if err != nil && c.Verbose {
 				log.Printf("error: %v scanning %v\n", err, target.Address.String())
@@ -150,10 +154,6 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 			if result != nil && err == nil {
 				// identified plugin match
 				return result, nil
-			}
-			tlsConn, err = DialTLS(ip, port)
-			if err != nil {
-				return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
 			}
 		}
 	} else {
@@ -206,11 +206,15 @@ func simplePluginRunner(
 	return result, err
 }
 
-func DialTLS(ip string, port uint16) (net.Conn, error) {
-	addr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
-	conn, err := tls.DialWithDialer(dialer, "tcp", addr, &tlsConfig)
-
-	return conn, err
+func DialTLS(target plugins.Target) (net.Conn, error) {
+	config := &tlsConfig
+	if target.Host != "" {
+		// make a new config clone to add the custom host for each new tls connection
+		c := config.Clone()
+		c.ServerName = target.Host
+		config = c
+	}
+	return tls.DialWithDialer(dialer, "tcp", target.Address.String(), config)
 }
 
 func DialTCP(ip string, port uint16) (net.Conn, error) {
