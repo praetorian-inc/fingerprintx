@@ -229,6 +229,16 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 	conf := ssh.ClientConfig{}
 	conf.Auth = nil
 	conf.Auth = append(conf.Auth, ssh.Password("admin"))
+	conf.Auth = append(conf.Auth,
+		ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) ([]string, error) {
+			answers := make([]string, len(questions))
+			for i := range answers {
+				answers[i] = "password"
+			}
+			return answers, nil
+		}),
+	)
+
 	conf.User = "admin"
 	conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 	// use all the ciphers supported by the go crypto ssh library
@@ -254,7 +264,7 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 
 	authClient, err := ssh.Dial("tcp", target.Address.String(), &conf)
 
-	passwordAuth = strings.Contains(err.Error(), "password")
+	passwordAuth = strings.Contains(err.Error(), "password") || strings.Contains(err.Error(), "keyboard-interactive")
 	if authClient != nil {
 		authClient.Close()
 	}
