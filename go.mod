@@ -1,6 +1,6 @@
 module github.com/praetorian-inc/fingerprintx
 
-go 1.19
+go 1.20
 
 require (
 	github.com/ory/dockertest/v3 v3.9.1
