@@ -195,6 +195,11 @@ func isOracleDBRunning(response []byte) bool {
 		0x50, 0x3d, 0x29, 0x28, 0x56, 0x53, 0x4e, 0x4e,
 		0x55, 0x4d, 0x3d,
 	}
+
+	if len(response) < 27 {
+		return false
+	}
+
 	responseCode := int(response[4])
 
 	// This should always be a response code of 4 (rejection),
