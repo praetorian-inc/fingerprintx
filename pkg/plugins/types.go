@@ -473,9 +473,7 @@ type ServiceRtsp struct {
 
 func (e ServiceRtsp) Type() string { return ProtoRtsp }
 
-type ServiceDNS struct {
-	ResponseTXT string `json:"responseTXT"`
-}
+type ServiceDNS struct{}
 
 func (e ServiceDNS) Type() string { return ProtoDNS }
 

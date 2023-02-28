@@ -34,14 +34,12 @@ func init() {
 	plugins.RegisterPlugin(&TCPPlugin{})
 }
 
-func CheckDNS(conn net.Conn, timeout time.Duration) (bool, string, error) {
-	responseTXT := ""
-
+func CheckDNS(conn net.Conn, timeout time.Duration) (bool, error) {
 	for attempts := 0; attempts < 3; attempts++ {
 		transactionID := make([]byte, 2)
 		_, err := rand.Read(transactionID)
 		if err != nil {
-			return false, "", &utils.RandomizeError{Message: "Transaction ID"}
+			return false, &utils.RandomizeError{Message: "Transaction ID"}
 		}
 
 		InitialConnectionPackage := append(transactionID, []byte{ //nolint:gocritic
@@ -62,47 +60,37 @@ func CheckDNS(conn net.Conn, timeout time.Duration) (bool, string, error) {
 
 		response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
 		if err != nil {
-			return false, "", err
+			return false, err
 		}
 
 		if len(response) == 0 {
-			return false, "", nil
+			return false, nil
 		}
 
 		if conn.RemoteAddr().Network() == "udp" {
 			if !bytes.Equal(transactionID[0:1], response[0:1]) {
-				return false, "", nil
+				return false, nil
 			}
 		}
 
 		if conn.RemoteAddr().Network() == "tcp" {
 			if !bytes.Equal(transactionID[0:1], response[2:3]) {
-				return false, "", nil
+				return false, nil
 			}
 		}
-
-		if len(response) < 43 {
-			return false, "", nil
-		}
-
-		responseLen := response[42]
-		responseTXT = string(response[43 : 43+responseLen])
 	}
 
-	return true, responseTXT, nil
+	return true, nil
 }
 
 func (p *UDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	isDNS, responseTXT, err := CheckDNS(conn, timeout)
+	isDNS, err := CheckDNS(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if isDNS {
-		payload := plugins.ServiceDNS{
-			ResponseTXT: responseTXT,
-		}
-
+		payload := plugins.ServiceDNS{}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 	}
 
@@ -123,15 +111,13 @@ func (p *UDPPlugin) Type() plugins.Protocol {
 
 func (p TCPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 
-	isDNS, responseTXT, err := CheckDNS(conn, timeout)
+	isDNS, err := CheckDNS(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
 
 	if isDNS {
-		payload := plugins.ServiceDNS{
-			ResponseTXT: responseTXT,
-		}
+		payload := plugins.ServiceDNS{}
 
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
