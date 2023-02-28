@@ -34,43 +34,80 @@ func init() {
 	plugins.RegisterPlugin(&TCPPlugin{})
 }
 
-func (p *UDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	transactionID := make([]byte, 2)
-	_, err := rand.Read(transactionID)
-	if err != nil {
-		return nil, &utils.RandomizeError{Message: "Transaction ID"}
-	}
-	InitialConnectionPackage := append(transactionID, []byte{ //nolint:gocritic
-		// Transaction ID
-		0x01, 0x00, // Flags: 0x0100 Standard query
-		0x00, 0x01, // Questions: 1
-		0x00, 0x00, // Answer RRs: 0
-		0x00, 0x00, // Authority RRs: 0
-		0x00, 0x00, // Additional RRs: 0
-		0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x04, 0x62, 0x69, 0x6e, 0x64, 0x00, // Name: version.bind
-		0x00, 0x10, // Type: TXT (Text strings) (16)
-		0x00, 0x03, // Class: CH (0x0003)
-	}...)
+func CheckDNS(conn net.Conn, timeout time.Duration) (bool, string, error) {
+	responseTXT := ""
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
+	for attempts := 0; attempts < 3; attempts++ {
+
+		transactionID := make([]byte, 2)
+		_, err := rand.Read(transactionID)
+		if err != nil {
+			return false, "", &utils.RandomizeError{Message: "Transaction ID"}
+		}
+
+		InitialConnectionPackage := append(transactionID, []byte{ //nolint:gocritic
+			// Transaction ID
+			0x01, 0x00, // Flags: 0x0100 Standard query
+			0x00, 0x01, // Questions: 1
+			0x00, 0x00, // Answer RRs: 0
+			0x00, 0x00, // Authority RRs: 0
+			0x00, 0x00, // Additional RRs: 0
+			0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x04, 0x62, 0x69, 0x6e, 0x64, 0x00, // Name: version.bind
+			0x00, 0x10, // Type: TXT (Text strings) (16)
+			0x00, 0x03, // Class: CH (0x0003)
+		}...)
+
+		if conn.RemoteAddr().Network() == "tcp" {
+			InitialConnectionPackage = append([]byte{0x00, 0x1e}, InitialConnectionPackage...)
+		}
+
+		response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
+		if err != nil {
+			return false, "", err
+		}
+
+		if len(response) == 0 {
+			return false, "", nil
+		}
+
+		if conn.RemoteAddr().Network() == "udp" {
+			if !bytes.Equal(transactionID[0:1], response[0:1]) {
+				return false, "", nil
+			}
+		}
+
+		if conn.RemoteAddr().Network() == "tcp" {
+			if !bytes.Equal(transactionID[0:1], response[2:3]) {
+				return false, "", nil
+			}
+		}
+
+		if len(response) < 43 {
+			return false, "", nil
+		}
+
+		responseLen := response[42]
+		responseTXT = string(response[43 : 43+responseLen])
+	}
+
+	return true, responseTXT, nil
+}
+
+func (p *UDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+
+	isDNS, responseTXT, err := CheckDNS(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
-	if len(response) == 0 {
-		return nil, nil
+
+	if isDNS {
+		payload := plugins.ServiceDNS{
+			ResponseTXT: responseTXT,
+		}
+
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
 	}
 
-	if bytes.Equal(transactionID[0:1], response[0:1]) {
-		if len(response) > 42 {
-			responseLen := response[42]
-			responseTXT := string(response[43 : 43+responseLen])
-			payload := plugins.ServiceDNS{
-				ResponseTXT: responseTXT,
-			}
-			return plugins.CreateServiceFrom(target, payload, false, "", plugins.UDP), nil
-		}
-		return nil, nil
-	}
 	return nil, nil
 }
 
@@ -87,43 +124,20 @@ func (p *UDPPlugin) Type() plugins.Protocol {
 }
 
 func (p TCPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	transactionID := make([]byte, 2)
-	_, err := rand.Read(transactionID)
-	if err != nil {
-		return nil, &utils.RandomizeError{Message: "Transaction ID"}
-	}
-	InitialConnectionPackage := append(transactionID, []byte{ //nolint:gocritic
-		// Transaction ID
-		0x01, 0x00, // Flags: 0x0100 Standard query
-		0x00, 0x01, // Questions: 1
-		0x00, 0x00, // Answer RRs: 0
-		0x00, 0x00, // Authority RRs: 0
-		0x00, 0x00, // Additional RRs: 0
-		0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x04, 0x62, 0x69, 0x6e, 0x64, 0x00, // Name: version.bind
-		0x00, 0x10, // Type: TXT (Text strings) (16)
-		0x00, 0x03, // Class: CH (0x0003)
-	}...)
-	InitialConnectionPackage = append([]byte{0x00, 0x1e}, InitialConnectionPackage...)
 
-	response, err := utils.SendRecv(conn, InitialConnectionPackage, timeout)
+	isDNS, responseTXT, err := CheckDNS(conn, timeout)
 	if err != nil {
 		return nil, err
 	}
-	if len(response) == 0 {
-		return nil, nil
+
+	if isDNS {
+		payload := plugins.ServiceDNS{
+			ResponseTXT: responseTXT,
+		}
+
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
 
-	if bytes.Equal(transactionID[0:1], response[2:3]) {
-		if len(response) > 42 {
-			responseLen := response[42]
-			responseTXT := string(response[43 : 43+responseLen])
-			payload := plugins.ServiceDNS{
-				ResponseTXT: responseTXT,
-			}
-			return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
-		}
-		return nil, nil
-	}
 	return nil, nil
 }
 
