@@ -93,7 +93,6 @@ func CheckDNS(conn net.Conn, timeout time.Duration) (bool, string, error) {
 }
 
 func (p *UDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-
 	isDNS, responseTXT, err := CheckDNS(conn, timeout)
 	if err != nil {
 		return nil, err
