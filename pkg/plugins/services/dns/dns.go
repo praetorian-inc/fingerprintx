@@ -38,7 +38,6 @@ func CheckDNS(conn net.Conn, timeout time.Duration) (bool, string, error) {
 	responseTXT := ""
 
 	for attempts := 0; attempts < 3; attempts++ {
-
 		transactionID := make([]byte, 2)
 		_, err := rand.Read(transactionID)
 		if err != nil {
