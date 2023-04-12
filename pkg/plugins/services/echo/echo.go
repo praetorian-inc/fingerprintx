@@ -21,33 +21,27 @@ import (
 	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
+	"github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
 )
 
 type EchoPlugin struct{}
 
 const ECHO = "echo"
 
-func isEcho(conn net.Conn) (bool, error) {
+func isEcho(conn net.Conn, timeout time.Duration) (bool, error) {
 	// Generate a random 64 byte payload
 	payload := make([]byte, 64)
 	if _, err := rand.Read(payload); err != nil {
 		return false, err
 	}
 
-	// Send the payload to the server
-	if _, err := conn.Write(payload); err != nil {
-		return false, err
-	}
-
-	// Read the response from the server
-	response := make([]byte, 64)
-	n, err := conn.Read(response)
+	response, err := pluginutils.SendRecv(conn, payload, timeout)
 	if err != nil {
 		return false, err
 	}
 
 	// Check if the response matches the payload
-	isEchoService := bytes.Equal(payload[:n], response[:n])
+	isEchoService := bytes.Equal(payload[:], response[:])
 
 	return isEchoService, nil
 }
@@ -60,8 +54,8 @@ func (p *EchoPlugin) PortPriority(port uint16) bool {
 	return port == 7
 }
 
-func (p *EchoPlugin) Run(conn net.Conn, _ time.Duration, target plugins.Target) (*plugins.Service, error) {
-	if isEcho, err := isEcho(conn); !isEcho || err != nil {
+func (p *EchoPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	if isEcho, err := isEcho(conn, timeout); !isEcho || err != nil {
 		return nil, nil
 	}
 	payload := plugins.ServiceEcho{}
