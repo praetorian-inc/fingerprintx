@@ -41,7 +41,7 @@ func isEcho(conn net.Conn, timeout time.Duration) (bool, error) {
 	}
 
 	// Check if the response matches the payload
-	isEchoService := bytes.Equal(payload[:], response[:])
+	isEchoService := bytes.Equal(payload, response)
 
 	return isEchoService, nil
 }
