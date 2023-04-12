@@ -60,7 +60,7 @@ func (p *EchoPlugin) PortPriority(port uint16) bool {
 	return port == 7
 }
 
-func (p *EchoPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+func (p *EchoPlugin) Run(conn net.Conn, _ time.Duration, target plugins.Target) (*plugins.Service, error) {
 	if isEcho, err := isEcho(conn); !isEcho || err != nil {
 		return nil, nil
 	}
