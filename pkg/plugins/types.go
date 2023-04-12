@@ -38,6 +38,7 @@ const TypeService string = "service"
 const (
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
+	ProtoEcho       = "echo"
 	ProtoFTP        = "ftp"
 	ProtoHTTP       = "http"
 	ProtoHTTPS      = "https"
@@ -482,6 +483,10 @@ type ServiceDHCP struct {
 }
 
 func (e ServiceDHCP) Type() string { return ProtoDHCP }
+
+type ServiceEcho struct{}
+
+func (e ServiceEcho) Type() string { return ProtoEcho }
 
 type ServiceRsync struct{}
 
