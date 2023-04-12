@@ -20,6 +20,7 @@ package scan
 import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dhcp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dns"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/echo"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ftp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/http"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/imap"
