@@ -22,7 +22,7 @@ import (
 	"github.com/praetorian-inc/fingerprintx/pkg/test"
 )
 
-func TestTelnet(t *testing.T) {
+func TestEcho(t *testing.T) {
 	testcases := []test.Testcase{
 		{
 			Description: "echo",
