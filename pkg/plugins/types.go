@@ -45,6 +45,7 @@ const (
 	ProtoHTTP2      = "http2"
 	ProtoIMAP       = "imap"
 	ProtoIMAPS      = "imaps"
+	ProtoIPMI       = "ipmi"
 	ProtoIPSEC      = "ipsec"
 	ProtoKafka      = "kafka"
 	ProtoLDAP       = "ldap"
@@ -487,6 +488,10 @@ func (e ServiceDHCP) Type() string { return ProtoDHCP }
 type ServiceEcho struct{}
 
 func (e ServiceEcho) Type() string { return ProtoEcho }
+
+type ServiceIPMI struct{}
+
+func (e ServiceIPMI) Type() string { return ProtoIPMI }
 
 type ServiceRsync struct{}
 
