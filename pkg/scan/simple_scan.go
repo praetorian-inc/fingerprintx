@@ -73,6 +73,31 @@ func setupPlugins() {
 
 // UDP Scan of the target
 func (c *Config) UDPScanTarget(target plugins.Target) (*plugins.Service, error) {
+
+	// first check the default port mappings for TCP / TLS
+	for _, plugin := range sortedUDPPlugins {
+		ip := target.Address.Addr().String()
+		port := target.Address.Port()
+		if plugin.PortPriority(port) {
+			conn, err := DialUDP(ip, port)
+			if err != nil {
+				return nil, fmt.Errorf("unable to connect, err = %w", err)
+			}
+			result, err := simplePluginRunner(conn, target, c, plugin)
+			if err != nil && c.Verbose {
+				log.Printf("error: %v scanning %v\n", err, target.Address.String())
+			}
+			if result != nil && err == nil {
+				return result, nil
+			}
+		}
+	}
+
+	// if we're fast mode, return (because fast mode only checks the default port service mapping)
+	if c.FastMode {
+		return nil, nil
+	}
+
 	for _, plugin := range sortedUDPPlugins {
 		conn, err := DialUDP(target.Address.Addr().String(), target.Address.Port())
 		if err != nil {
