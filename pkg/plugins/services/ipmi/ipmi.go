@@ -95,9 +95,13 @@ func isIPMI(conn net.Conn, timeout time.Duration) (bool, error) {
 
 	// Wait for a response from the server
 	response := make([]byte, len(ipmiExpectedResponse))
-	conn.SetReadDeadline(time.Now().Add(timeout))
-	_, err = io.ReadFull(conn, response)
 
+	err = conn.SetReadDeadline(time.Now().Add(timeout))
+	if err != nil {
+		return false, err
+	}
+
+	_, err = io.ReadFull(conn, response)
 	if err != nil {
 		return false, err
 	}
