@@ -15,8 +15,6 @@
 package ipmi
 
 import (
-	"encoding/hex"
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -88,25 +86,17 @@ type IPMIPlugin struct{}
 const IPMI = "ipmi"
 
 func isIPMI(conn net.Conn, timeout time.Duration) (bool, error) {
-	fmt.Println("isIPMI Running!")
 
 	// Send the initial packet to the server
 	_, err := conn.Write(ipmiInitialPacket[:])
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("Sent to server:")
-	fmt.Println(hex.Dump(ipmiInitialPacket[:]))
 
 	// Wait for a response from the server
 	response := make([]byte, len(ipmiExpectedResponse))
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	_, err = io.ReadFull(conn, response)
-
-	// Print a hex dump of the response
-	fmt.Println("len(response) = ", len(response))
-	fmt.Println("Response from server:")
-	fmt.Println(hex.Dump(response))
 
 	if err != nil {
 		return false, err
@@ -132,7 +122,6 @@ func (p *IPMIPlugin) PortPriority(port uint16) bool {
 
 func (p *IPMIPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
 	if isIPMI, err := isIPMI(conn, timeout); !isIPMI || err != nil {
-		fmt.Printf("Err = %v\n", err)
 		return nil, nil
 	}
 	payload := plugins.ServiceIPMI{}
@@ -145,7 +134,7 @@ func (p *IPMIPlugin) Name() string {
 }
 
 func (p *IPMIPlugin) Type() plugins.Protocol {
-	return plugins.TCP
+	return plugins.UDP
 }
 
 func (p *IPMIPlugin) Priority() int {
