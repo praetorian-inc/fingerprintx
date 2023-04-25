@@ -86,14 +86,11 @@ type IPMIPlugin struct{}
 const IPMI = "ipmi"
 
 func isIPMI(conn net.Conn, timeout time.Duration) (bool, error) {
-
-	// Send the initial packet to the server
 	_, err := conn.Write(ipmiInitialPacket[:])
 	if err != nil {
 		return false, err
 	}
 
-	// Wait for a response from the server
 	response := make([]byte, len(ipmiExpectedResponse))
 
 	err = conn.SetReadDeadline(time.Now().Add(timeout))
@@ -106,7 +103,6 @@ func isIPMI(conn net.Conn, timeout time.Duration) (bool, error) {
 		return false, err
 	}
 
-	// Check if the response matches the expected response
 	for i, b := range ipmiExpectedResponse {
 		if response[i] != b {
 			return false, nil
