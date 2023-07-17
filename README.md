@@ -14,6 +14,7 @@
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
   <a href="#running-fingerprintx">Running fingerprintx</a> •
+  <a href="#using-as-a-library">Using as a library</a> •
   <a href="#why-not-nmap">Why not nmap?</a> •
   <a href="#notes">Notes</a> •
   <a href="#acknowledgements">Acknowledgements</a>
@@ -168,6 +169,9 @@ $ cat input.txt | fingerprintx --json
 {"host":"praetorian.com","ip":"146.148.61.165","port":80,"service":"http","transport":"tcp","metadata":{"responseHeaders":{"Connection":["keep-alive"],"Content-Type":["text/html"],"Date":["Mon, 19 Sep 2022 18:37:55 GMT"],"Etag":["W/\"5e3e263f-1703\""],"Keep-Alive":["timeout=20"],"Server":["nginx"],"Vary":["Accept-Encoding"]},"status":"404 Not Found","statusCode":404,"version":"nginx"}}
 {"host":"telehack.com","ip":"64.13.139.230","port":23,"service":"telnet","transport":"tcp","metadata":{"serverData":"fffb03"}}
 ```
+
+# Using as a library
+`fingerprintx` can be imported into your project to scan for services on open ports. Example code on how one might do this is provided [here in the examples directory](examples/scan.go). Build with `go build scan.go`. Another file that might be of use as a reference when importing `fingerprintx` into your own project is the [command line runner](pkg/runner/root.go).
 
 # Why Not Nmap?
 [Nmap](https://nmap.org/) is the standard for network scanning. Why use `fingerprintx` instead of nmap? The main two reasons are:
