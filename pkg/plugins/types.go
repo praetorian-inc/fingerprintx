@@ -502,8 +502,8 @@ type ServiceJDWP struct {
 	Description string `json:"description"`
 	JdwpMajor   int32  `json:"jdwpMajor"`
 	JdwpMinor   int32  `json:"jdwpMinor"`
-	VmVersion   string `json:"vmVersion"`
-	VmName      string `json:"vmName"`
+	VMVersion   string `json:"VMVersion"`
+	VMName      string `json:"VMName"`
 }
 
 func (e ServiceJDWP) Type() string { return ProtoJDWP }

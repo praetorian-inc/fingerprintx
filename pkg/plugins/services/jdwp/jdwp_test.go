@@ -18,5 +18,6 @@ import (
 	"testing"
 )
 
-func TestJDWP(t *testing.T) {
+// tested locally against a Java process with JDWP enabled
+func TestJDWP(_ *testing.T) {
 }

@@ -137,8 +137,8 @@ func DetectJDWPVersion(conn net.Conn, timeout time.Duration) (*plugins.ServiceJD
 	info.Description = string(description)
 	info.JdwpMajor = jdwpMajor
 	info.JdwpMinor = jdwpMinor
-	info.VmVersion = string(vmVersion)
-	info.VmName = string(vmName)
+	info.VMVersion = string(vmVersion)
+	info.VMName = string(vmName)
 
 	return &info, nil
 }
@@ -170,8 +170,7 @@ func (p *JDWPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 		return plugins.CreateServiceFrom(target, nil, false, "", plugins.TCP), nil
 	}
 
-	return plugins.CreateServiceFrom(target, info, false, info.VmVersion, plugins.TCP), nil
-
+	return plugins.CreateServiceFrom(target, info, false, info.VMVersion, plugins.TCP), nil
 }
 
 func (p *JDWPPlugin) PortPriority(port uint16) bool {
