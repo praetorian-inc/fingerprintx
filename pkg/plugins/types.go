@@ -47,6 +47,7 @@ const (
 	ProtoIMAPS      = "imaps"
 	ProtoIPMI       = "ipmi"
 	ProtoIPSEC      = "ipsec"
+	ProtoJDWP       = "jdwp"
 	ProtoKafka      = "kafka"
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
@@ -496,3 +497,13 @@ func (e ServiceIPMI) Type() string { return ProtoIPMI }
 type ServiceRsync struct{}
 
 func (e ServiceRsync) Type() string { return ProtoRsync }
+
+type ServiceJDWP struct {
+	Description string `json:"description"`
+	JdwpMajor   int32  `json:"jdwpMajor"`
+	JdwpMinor   int32  `json:"jdwpMinor"`
+	VMVersion   string `json:"VMVersion"`
+	VMName      string `json:"VMName"`
+}
+
+func (e ServiceJDWP) Type() string { return ProtoJDWP }

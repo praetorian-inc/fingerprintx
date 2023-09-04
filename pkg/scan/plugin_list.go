@@ -26,6 +26,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/imap"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ipmi"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ipsec"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/jdwp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/kafka/kafkaNew"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/kafka/kafkaOld"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ldap"

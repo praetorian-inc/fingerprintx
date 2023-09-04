@@ -73,7 +73,6 @@ func setupPlugins() {
 
 // UDP Scan of the target
 func (c *Config) UDPScanTarget(target plugins.Target) (*plugins.Service, error) {
-
 	// first check the default port mappings for TCP / TLS
 	for _, plugin := range sortedUDPPlugins {
 		ip := target.Address.Addr().String()

@@ -110,7 +110,6 @@ func (p *UDPPlugin) Type() plugins.Protocol {
 }
 
 func (p TCPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-
 	isDNS, err := CheckDNS(conn, timeout)
 	if err != nil {
 		return nil, err
