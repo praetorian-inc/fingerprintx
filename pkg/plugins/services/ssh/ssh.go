@@ -227,6 +227,7 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 
 	// check auth methods
 	conf := ssh.ClientConfig{}
+	conf.Timeout = timeout
 	conf.Auth = nil
 	conf.Auth = append(conf.Auth, ssh.Password("admin"))
 	conf.Auth = append(conf.Auth,
@@ -264,7 +265,10 @@ func (p *SSHPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 
 	authClient, err := ssh.Dial("tcp", target.Address.String(), &conf)
 
-	passwordAuth = strings.Contains(err.Error(), "password") || strings.Contains(err.Error(), "keyboard-interactive")
+	if err != nil {
+		passwordAuth = strings.Contains(err.Error(), "password") || strings.Contains(err.Error(), "keyboard-interactive")
+	}
+
 	if authClient != nil {
 		authClient.Close()
 	}
