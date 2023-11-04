@@ -307,7 +307,7 @@ type RPCB struct {
 	Owner    string `json:"owner"`
 }
 
-func (e ServiceRPC) Type() string { return ProtoRDP }
+func (e ServiceRPC) Type() string { return ProtoRPC }
 
 type ServiceSMB struct {
 	SigningEnabled      bool   `json:"signingEnabled"`  // e.g. Is SMB Signing Enabled?
