@@ -64,8 +64,20 @@ func (f *SNMPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	stringBegin := idx + InfoOffset
 	if bytes.Contains(response, RequestID) {
 		if stringBegin < len(response) {
+			stringEnd := len(response)
+			if bytes.Contains(response, []byte("\r\n")) {
+				stringEnd = bytes.Index(response, []byte("\r\n"))
+			}
+
+			for i, c := range response[stringBegin:stringEnd] {
+				if c > 32 && c < 127 { // 判断字符是否可见
+					stringBegin = stringBegin + i
+					break
+				}
+			}
+			print(string(response[stringBegin:stringEnd]))
 			return plugins.CreateServiceFrom(target, plugins.ServiceSNMP{}, false,
-				string(response[stringBegin:]), plugins.UDP), nil
+				string(response[stringBegin:stringEnd]), plugins.UDP), nil
 		}
 		return plugins.CreateServiceFrom(target, plugins.ServiceSNMP{}, false, "", plugins.UDP), nil
 	}
