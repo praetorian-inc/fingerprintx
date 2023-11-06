@@ -137,8 +137,8 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 		}
 	}
 
-	tlsConn, err := DialTLS(target)
-	isTLS := err == nil
+	tlsConn, tlsErr := DialTLS(target)
+	isTLS := tlsErr == nil
 	if isTLS {
 		for _, plugin := range sortedTCPTLSPlugins {
 			if plugin.PortPriority(port) {
@@ -167,7 +167,7 @@ func (c *Config) SimpleScanTarget(target plugins.Target) (*plugins.Service, erro
 
 	if isTLS {
 		for _, plugin := range sortedTCPTLSPlugins {
-			tlsConn, err = DialTLS(target)
+			tlsConn, err := DialTLS(target)
 			if err != nil {
 				return nil, fmt.Errorf("error connecting via TLS, err = %w", err)
 			}
