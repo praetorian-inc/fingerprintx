@@ -347,9 +347,8 @@ func (p *RDPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 			OSFingerprint: fingerprint,
 		}
 		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
-	} else {
-		return nil, err
 	}
+	return nil, err
 }
 
 func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
@@ -358,9 +357,8 @@ func (p *TLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		return nil, nil
 	} else if check && info != nil && err == nil {
 		return plugins.CreateServiceFrom(target, *info, true, "", plugins.TCP), nil
-	} else {
-		return nil, err
 	}
+	return nil, err
 }
 
 func (p *RDPPlugin) Name() string {
