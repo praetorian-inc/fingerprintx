@@ -125,6 +125,9 @@ func parseRPCInfo(response []byte, lookupResponse *plugins.ServiceRPC) error {
 
 	for valueFollows == 1 {
 		tmp := plugins.RPCB{}
+		if len(response) < 0x20 {
+			return nil
+		}
 
 		tmp.Program = int(binary.BigEndian.Uint32(response[0:4]))
 		response = response[4:]
