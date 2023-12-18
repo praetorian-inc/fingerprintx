@@ -125,9 +125,8 @@ func DetectRedis(conn net.Conn, target plugins.Target, timeout time.Duration, tl
 	}
 	if tls {
 		return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCPTLS), nil
-	} else {
-		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 	}
+	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }
 
 func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
