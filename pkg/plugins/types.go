@@ -65,6 +65,7 @@ const (
 	ProtoRDP        = "rdp"
 	ProtoRPC        = "rpc"
 	ProtoRedis      = "redis"
+	ProtoRedisTLS   = "redistls"
 	ProtoRsync      = "rsync"
 	ProtoRtsp       = "rtsp"
 	ProtoSMB        = "smb"
@@ -111,6 +112,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoRedis:
 		var p ServiceRedis
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRedisTLS:
+		var p ServiceRedisTLS
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoHTTP:
@@ -401,6 +406,12 @@ type ServiceRedis struct {
 }
 
 func (e ServiceRedis) Type() string { return ProtoRedis }
+
+type ServiceRedisTLS struct {
+	AuthRequired bool `json:"authRequired:"`
+}
+
+func (e ServiceRedisTLS) Type() string { return ProtoRedisTLS }
 
 type ServiceFTP struct {
 	Banner         string `json:"banner"`
