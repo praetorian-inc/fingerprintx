@@ -31,7 +31,7 @@ type Info struct {
 }
 
 const REDIS = "redis"
-const REDISTLS = "redistls"
+const REDISTLS = "redis"
 
 // Check if the response is from a Redis server
 // returns an error if it's not validated as a Redis server
@@ -84,17 +84,10 @@ func (p *REDISTLSPlugin) PortPriority(port uint16) bool {
 }
 
 func (p *REDISTLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	result, err := DetectRedis(conn, timeout)
-	if err != nil {
-		return nil, err
-	}
-	payload := plugins.ServiceRedisTLS{
-		AuthRequired: result.AuthRequired,
-	}
-	return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCPTLS), nil
+	return DetectRedis(conn, target, timeout, true)
 }
 
-func DetectRedis(conn net.Conn, timeout time.Duration) (*Info, error) {
+func DetectRedis(conn net.Conn, target plugins.Target, timeout time.Duration, tls bool) (*plugins.Service, error) {
 	//https://redis.io/commands/ping/
 	// PING is a supported command since 1.0.0
 	// [*1(CR)(NL)$4(CR)(NL)PING(CR)(NL)]
@@ -127,19 +120,18 @@ func DetectRedis(conn net.Conn, timeout time.Duration) (*Info, error) {
 	if err != nil {
 		return nil, nil
 	}
-
-	return &result, nil
-}
-
-func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	result, err := DetectRedis(conn, timeout)
-	if err != nil {
-		return nil, err
-	}
 	payload := plugins.ServiceRedis{
 		AuthRequired: result.AuthRequired,
 	}
-	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
+	if tls {
+		return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCPTLS), nil
+	} else {
+		return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
+	}
+}
+
+func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return DetectRedis(conn, target, timeout, false)
 }
 
 func (p *REDISPlugin) Name() string {
