@@ -24,12 +24,14 @@ import (
 )
 
 type REDISPlugin struct{}
+type REDISTLSPlugin struct{}
 
 type Info struct {
 	AuthRequired bool
 }
 
 const REDIS = "redis"
+const REDISTLS = "redis"
 
 // Check if the response is from a Redis server
 // returns an error if it's not validated as a Redis server
@@ -70,13 +72,22 @@ func checkRedis(data []byte) (Info, error) {
 
 func init() {
 	plugins.RegisterPlugin(&REDISPlugin{})
+	plugins.RegisterPlugin(&REDISTLSPlugin{})
 }
 
 func (p *REDISPlugin) PortPriority(port uint16) bool {
 	return port == 6379
 }
 
-func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+func (p *REDISTLSPlugin) PortPriority(port uint16) bool {
+	return port == 6380
+}
+
+func (p *REDISTLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return DetectRedis(conn, target, timeout, true)
+}
+
+func DetectRedis(conn net.Conn, target plugins.Target, timeout time.Duration, tls bool) (*plugins.Service, error) {
 	//https://redis.io/commands/ping/
 	// PING is a supported command since 1.0.0
 	// [*1(CR)(NL)$4(CR)(NL)PING(CR)(NL)]
@@ -112,17 +123,36 @@ func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 	payload := plugins.ServiceRedis{
 		AuthRequired: result.AuthRequired,
 	}
+	if tls {
+		return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCPTLS), nil
+	}
 	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
+}
+
+func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return DetectRedis(conn, target, timeout, false)
 }
 
 func (p *REDISPlugin) Name() string {
 	return REDIS
 }
 
+func (p *REDISTLSPlugin) Name() string {
+	return REDISTLS
+}
+
 func (p *REDISPlugin) Type() plugins.Protocol {
 	return plugins.TCP
 }
 
+func (p *REDISTLSPlugin) Type() plugins.Protocol {
+	return plugins.TCPTLS
+}
+
 func (p *REDISPlugin) Priority() int {
 	return 413
+}
+
+func (p *REDISTLSPlugin) Priority() int {
+	return 414
 }

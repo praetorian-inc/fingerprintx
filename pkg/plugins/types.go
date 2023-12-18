@@ -65,6 +65,7 @@ const (
 	ProtoRDP        = "rdp"
 	ProtoRPC        = "rpc"
 	ProtoRedis      = "redis"
+	ProtoRedisTLS   = "redis"
 	ProtoRsync      = "rsync"
 	ProtoRtsp       = "rtsp"
 	ProtoSMB        = "smb"

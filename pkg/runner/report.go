@@ -86,9 +86,17 @@ func Report(services []plugins.Service) error {
 			csvWriter.Flush()
 		default:
 			if len(service.Host) > 0 {
-				log.Printf("%s://%s:%d (%s)\n", strings.ToLower(service.Protocol), service.Host, service.Port, service.IP)
+				if service.TLS {
+					log.Printf("%s://%s:%d (%s) (tls)\n", strings.ToLower(service.Protocol), service.Host, service.Port, service.IP)
+				} else {
+					log.Printf("%s://%s:%d (%s)\n", strings.ToLower(service.Protocol), service.Host, service.Port, service.IP)
+				}
 			} else {
-				log.Printf("%s://%s:%d\n", strings.ToLower(service.Protocol), service.IP, service.Port)
+				if service.TLS {
+					log.Printf("%s://%s:%d (tls)\n", strings.ToLower(service.Protocol), service.IP, service.Port)
+				} else {
+					log.Printf("%s://%s:%d\n", strings.ToLower(service.Protocol), service.IP, service.Port)
+				}
 			}
 		}
 	}
