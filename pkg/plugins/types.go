@@ -405,7 +405,6 @@ func (e ServiceRedis) Type() string { return ProtoRedis }
 
 type ServiceFTP struct {
 	Banner         string `json:"banner"`
-	AnonymousLogin bool   `json:"anonymousLogin"`
 }
 
 func (e ServiceFTP) Type() string { return ProtoFTP }
