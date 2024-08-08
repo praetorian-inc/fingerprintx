@@ -13,12 +13,14 @@
 # limitations under the License.
 
 # Documentation on this file structure: https://goreleaser.com
-version: "2"
+version: 2
+
 project_name: fingerprintx
 
 before:
   hooks:
     - go mod download
+
 builds:
   - id: fingerprintx
     main: ./cmd/fingerprintx
@@ -32,6 +34,7 @@ builds:
     goarch:
       - amd64
       - arm64
+
 changelog:
   skip: true
   sort: asc
