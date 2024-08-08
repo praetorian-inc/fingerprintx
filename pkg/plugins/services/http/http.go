@@ -38,6 +38,7 @@ type HTTPSPlugin struct {
 
 const HTTP = "http"
 const HTTPS = "https"
+const USERAGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
 
 func init() {
 	wappalyzerClient, err := wappalyzer.New()
@@ -102,6 +103,7 @@ func (p *HTTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 			return http.ErrUseLastResponse
 		},
 	}
+	req.Header.Set("User-Agent", USERAGENT)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -157,6 +159,7 @@ func (p *HTTPSPlugin) Run(
 			return http.ErrUseLastResponse
 		},
 	}
+	req.Header.Set("User-Agent", USERAGENT)
 
 	resp, err := client.Do(req)
 	if err != nil {
