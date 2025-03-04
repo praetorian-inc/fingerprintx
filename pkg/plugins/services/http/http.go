@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"syscall"
@@ -111,7 +111,7 @@ func (p *HTTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	}
 	defer resp.Body.Close()
 
-	technologies, _ := p.FingerprintResponse(resp)
+	technologies, cpes, _ := p.FingerprintResponse(resp)
 
 	payload := plugins.ServiceHTTP{
 		Status:          resp.Status,
@@ -120,6 +120,9 @@ func (p *HTTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	}
 	if len(technologies) > 0 {
 		payload.Technologies = technologies
+	}
+	if len(cpes) > 0 {
+		payload.CPEs = cpes
 	}
 
 	return plugins.CreateServiceFrom(target, payload, false, resp.Header.Get("Server"), plugins.TCP), nil
@@ -167,7 +170,7 @@ func (p *HTTPSPlugin) Run(
 	}
 	defer resp.Body.Close()
 
-	technologies, _ := p.FingerprintResponse(resp)
+	technologies, cpes, _ := p.FingerprintResponse(resp)
 
 	payload := plugins.ServiceHTTPS{
 		Status:          resp.Status,
@@ -176,6 +179,9 @@ func (p *HTTPSPlugin) Run(
 	}
 	if len(technologies) > 0 {
 		payload.Technologies = technologies
+	}
+	if len(cpes) > 0 {
+		payload.CPEs = cpes
 	}
 
 	return plugins.CreateServiceFrom(target, payload, true, resp.Header.Get("Server"), plugins.TCP), nil
@@ -205,24 +211,28 @@ func (p *HTTPSPlugin) Name() string {
 	return HTTPS
 }
 
-func (p *HTTPPlugin) FingerprintResponse(resp *http.Response) ([]string, error) {
+func (p *HTTPPlugin) FingerprintResponse(resp *http.Response) ([]string, []string, error) {
 	return fingerprint(resp, p.analyzer)
 }
 
-func (p *HTTPSPlugin) FingerprintResponse(resp *http.Response) ([]string, error) {
+func (p *HTTPSPlugin) FingerprintResponse(resp *http.Response) ([]string, []string, error) {
 	return fingerprint(resp, p.analyzer)
 }
 
-func fingerprint(resp *http.Response, analyzer *wappalyzer.Wappalyze) ([]string, error) {
-	var technologies []string
-	data, err := ioutil.ReadAll(resp.Body)
+func fingerprint(resp *http.Response, analyzer *wappalyzer.Wappalyze) ([]string, []string, error) {
+	var technologies, cpes []string
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
-	}
-	fingerprint := analyzer.Fingerprint(resp.Header, data)
-	for tech := range fingerprint {
-		technologies = append(technologies, tech)
+		return nil, nil, err
 	}
 
-	return technologies, nil
+	fingerprint := analyzer.FingerprintWithInfo(resp.Header, data)
+	for tech, appInfo := range fingerprint {
+		technologies = append(technologies, tech)
+		if cpe := appInfo.CPE; cpe != "" {
+			cpes = append(cpes, cpe)
+		}
+	}
+
+	return technologies, cpes, nil
 }

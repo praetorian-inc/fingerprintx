@@ -270,6 +270,7 @@ type ServiceHTTP struct {
 	StatusCode      int         `json:"statusCode"` // e.g. 200
 	ResponseHeaders http.Header `json:"responseHeaders"`
 	Technologies    []string    `json:"technologies,omitempty"`
+	CPEs            []string    `json:"cpes,omitempty"`
 }
 
 func (e ServiceHTTP) Type() string { return ProtoHTTP }
@@ -279,6 +280,7 @@ type ServiceHTTPS struct {
 	StatusCode      int         `json:"statusCode"` // e.g. 200
 	ResponseHeaders http.Header `json:"responseHeaders"`
 	Technologies    []string    `json:"technologies,omitempty"`
+	CPEs            []string    `json:"cpes,omitempty"`
 }
 
 func (e ServiceHTTPS) Type() string { return ProtoHTTPS }
