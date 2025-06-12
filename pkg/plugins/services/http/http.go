@@ -170,12 +170,33 @@ func (p *HTTPSPlugin) Run(
 	}
 	defer resp.Body.Close()
 
+	// Extract Cert Subjects
+	certSubjectsMap := make(map[string]struct{})
+	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
+		cert := resp.TLS.PeerCertificates[0]
+		if cert.Subject.CommonName != "" {
+			certSubjectsMap[cert.Subject.CommonName] = struct{}{}
+		}
+		for _, name := range cert.DNSNames {
+			certSubjectsMap[name] = struct{}{}
+		}
+	}
+
+	certSubjects := make([]string, 0, len(certSubjectsMap))
+	for subject := range certSubjectsMap {
+		certSubjects = append(certSubjects, subject)
+	}
+
 	technologies, cpes, _ := p.FingerprintResponse(resp)
 
 	payload := plugins.ServiceHTTPS{
 		Status:          resp.Status,
 		StatusCode:      resp.StatusCode,
 		ResponseHeaders: resp.Header,
+	}
+
+	if len(certSubjects) > 0 {
+		payload.CertSubjects = certSubjects
 	}
 	if len(technologies) > 0 {
 		payload.Technologies = technologies

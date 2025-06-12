@@ -281,6 +281,7 @@ type ServiceHTTPS struct {
 	ResponseHeaders http.Header `json:"responseHeaders"`
 	Technologies    []string    `json:"technologies,omitempty"`
 	CPEs            []string    `json:"cpes,omitempty"`
+	CertSubjects    []string    `json:"certSubjects,omitempty"`
 }
 
 func (e ServiceHTTPS) Type() string { return ProtoHTTPS }
@@ -406,7 +407,7 @@ type ServiceRedis struct {
 func (e ServiceRedis) Type() string { return ProtoRedis }
 
 type ServiceFTP struct {
-	Banner         string `json:"banner"`
+	Banner string `json:"banner"`
 }
 
 func (e ServiceFTP) Type() string { return ProtoFTP }
