@@ -16,6 +16,7 @@ package scan
 
 import (
 	"log"
+	"sync"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
 )
@@ -36,22 +37,41 @@ func UDPScan(targets []plugins.Target, config Config) ([]plugins.Service, error)
 }
 
 // ScanTargets fingerprints service(s) running given a list of targets.
-func ScanTargets(targets []plugins.Target, config Config) ([]plugins.Service, error) {
-	var results []plugins.Service
 
+func ScanTargets(targets []plugins.Target, config Config) ([]plugins.Service, error) {
 	if config.UDP {
 		return UDPScan(targets, config)
 	}
 
+	var (
+		results []plugins.Service
+		mu      sync.Mutex
+		wg      sync.WaitGroup
+		sem     = make(chan struct{}, 1000) // Limit to 20 concurrent scans
+	)
+
 	for _, target := range targets {
-		result, err := config.SimpleScanTarget(target)
-		if err == nil && result != nil {
-			results = append(results, *result)
-		}
-		if config.Verbose && err != nil {
-			log.Printf("%s\n", err)
-		}
+		wg.Add(1)
+		sem <- struct{}{} // Acquire semaphore
+
+		go func(target plugins.Target) {
+			defer func() {
+				<-sem // Release semaphore
+				wg.Done()
+			}()
+
+			result, err := config.SimpleScanTarget(target)
+			if err == nil && result != nil {
+				mu.Lock()
+				results = append(results, *result)
+				mu.Unlock()
+			}
+			if config.Verbose && err != nil {
+				log.Printf("%s\n", err)
+			}
+		}(target)
 	}
 
+	wg.Wait()
 	return results, nil
 }

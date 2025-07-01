@@ -74,6 +74,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&config.verbose, "verbose", "v", false, "verbose mode")
 	rootCmd.PersistentFlags().
 		IntVarP(&config.timeout, "timeout", "w", 2000, "timeout (milliseconds)")
+	rootCmd.PersistentFlags().
+		IntVarP(&config.concurrency, "concurrency", "c", 20, "concurrency (concurrent connection probes)")
 }
 
 func Execute() {

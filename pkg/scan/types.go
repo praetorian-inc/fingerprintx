@@ -30,4 +30,6 @@ type Config struct {
 
 	// Prints logging messages to stderr
 	Verbose bool
+
+	Concurrency int
 }

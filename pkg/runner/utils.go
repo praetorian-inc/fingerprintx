@@ -66,6 +66,7 @@ func createScanConfig(config cliConfig) scan.Config {
 		FastMode:       config.fastMode,
 		UDP:            config.useUDP,
 		Verbose:        config.verbose,
+		Concurrency:    config.concurrency,
 	}
 }
 
