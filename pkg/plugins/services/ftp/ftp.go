@@ -23,7 +23,12 @@ import (
 	utils "github.com/praetorian-inc/fingerprintx/pkg/plugins/pluginutils"
 )
 
-var ftpResponse = regexp.MustCompile(`^\d{3}[- ](.*)\r`)
+var ftpRelaxed = regexp.MustCompile(`^\d{3}[- ](.*)\r`)
+
+var ftpPositive = regexp.MustCompile(
+	`(?i)^(?:(?:120|220|421|500|530|331)(?: |-)[^\r\n]*\r(?:\n)?|220-(?:[^\r\n]*\r?\n)+220(?: |-)[^\r\n]*\r(?:\n)?)$`,
+)
+var ftpNegative = regexp.MustCompile(`(?i)\b(?:smtp|esmtp|postfix|sendmail|exim|qmail|dovecot|courier|mail)\b`)
 
 const FTP = "ftp"
 
@@ -31,6 +36,13 @@ type FTPPlugin struct{}
 
 func init() {
 	plugins.RegisterPlugin(&FTPPlugin{})
+}
+
+func isFTPBanner(s string, port int) bool {
+	if port == 21 {
+		return ftpRelaxed.MatchString(s)
+	}
+	return ftpPositive.MatchString(s) && !ftpNegative.MatchString(s)
 }
 
 func (p *FTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
@@ -42,8 +54,8 @@ func (p *FTPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Tar
 		return nil, nil
 	}
 
-	matches := ftpResponse.FindStringSubmatch(string(response))
-	if matches == nil {
+	matches := isFTPBanner(string(response), int(target.Address.Port()))
+	if !matches {
 		return nil, nil
 	}
 
