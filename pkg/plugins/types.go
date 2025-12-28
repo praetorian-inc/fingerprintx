@@ -478,7 +478,7 @@ type ServiceModbus struct{}
 func (e ServiceModbus) Type() string { return ProtoModbus }
 
 type ServiceMongoDB struct {
-	Version string `json:"version,omitempty"`
+	CPEs []string `json:"cpes,omitempty"`
 }
 
 func (e ServiceMongoDB) Type() string { return ProtoMongoDB }
