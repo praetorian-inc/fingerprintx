@@ -52,6 +52,7 @@ const (
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
 	ProtoModbus     = "modbus"
+	ProtoMongoDB    = "mongodb"
 	ProtoMQTT       = "mqtt"
 	ProtoMSSQL      = "mssql"
 	ProtoMySQL      = "mysql"
@@ -172,6 +173,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoModbus:
 		var p ServiceModbus
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMongoDB:
+		var p ServiceMongoDB
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoLDAPS:
@@ -471,6 +476,12 @@ func (e ServiceMQTT) Type() string { return ProtoMQTT }
 type ServiceModbus struct{}
 
 func (e ServiceModbus) Type() string { return ProtoModbus }
+
+type ServiceMongoDB struct {
+	Version string `json:"version,omitempty"`
+}
+
+func (e ServiceMongoDB) Type() string { return ProtoMongoDB }
 
 type ServiceRtsp struct {
 	ServerInfo string `json:"serverInfo"`

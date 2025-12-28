@@ -32,6 +32,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ldap"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/linuxrpc"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/modbus"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mongodb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mqtt/mqtt3"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mqtt/mqtt5"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mssql"
