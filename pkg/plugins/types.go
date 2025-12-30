@@ -73,6 +73,7 @@ const (
 	ProtoSMTP       = "smtp"
 	ProtoSMTPS      = "smtps"
 	ProtoSNMP       = "snmp"
+	ProtoSNPP       = "snpp"
 	ProtoSSH        = "ssh"
 	ProtoStun       = "stun"
 	ProtoTelnet     = "telnet"
@@ -213,6 +214,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoPOP3S:
 		var p ServicePOP3S
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoSNPP:
+		var p ServiceSNPP
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	default:
@@ -359,6 +364,12 @@ func (e ServicePOP3S) Type() string { return ProtoPOP3S }
 type ServiceSNMP struct{}
 
 func (e ServiceSNMP) Type() string { return ProtoSNMP }
+
+type ServiceSNPP struct {
+	Banner string `json:"banner"`
+}
+
+func (e ServiceSNPP) Type() string { return ProtoSNPP }
 
 type ServiceNTP struct{}
 
