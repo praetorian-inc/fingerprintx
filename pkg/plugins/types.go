@@ -78,13 +78,7 @@ const (
 	ProtoStun       = "stun"
 	ProtoTelnet     = "telnet"
 	ProtoVNC        = "vnc"
-	// LLM Inference Servers
-	ProtoOllama   = "ollama"
-	ProtoVLLM     = "vllm"
-	ProtoLocalAI  = "localai"
-	ProtoLMStudio = "lmstudio"
-	ProtoTGI      = "tgi" // Text Generation Inference (HuggingFace)
-	ProtoUnknown  = "unknown"
+	ProtoUnknown    = "unknown"
 )
 
 // Used as a key for maps to plugins.
@@ -224,26 +218,6 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoSNPP:
 		var p ServiceSNPP
-		_ = json.Unmarshal(e.Raw, &p)
-		return p
-	case ProtoOllama:
-		var p ServiceOllama
-		_ = json.Unmarshal(e.Raw, &p)
-		return p
-	case ProtoVLLM:
-		var p ServiceVLLM
-		_ = json.Unmarshal(e.Raw, &p)
-		return p
-	case ProtoLocalAI:
-		var p ServiceLocalAI
-		_ = json.Unmarshal(e.Raw, &p)
-		return p
-	case ProtoLMStudio:
-		var p ServiceLMStudio
-		_ = json.Unmarshal(e.Raw, &p)
-		return p
-	case ProtoTGI:
-		var p ServiceTGI
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	default:
@@ -560,49 +534,3 @@ type ServiceJDWP struct {
 }
 
 func (e ServiceJDWP) Type() string { return ProtoJDWP }
-
-// ServiceOllama contains Ollama-specific metadata
-type ServiceOllama struct {
-	Version string   `json:"version,omitempty"`
-	Models  []string `json:"models,omitempty"`
-	CPEs    []string `json:"cpes,omitempty"`
-}
-
-func (e ServiceOllama) Type() string { return ProtoOllama }
-
-// ServiceVLLM contains vLLM-specific metadata
-type ServiceVLLM struct {
-	Version string   `json:"version,omitempty"`
-	Model   string   `json:"model,omitempty"`
-	CPEs    []string `json:"cpes,omitempty"`
-}
-
-func (e ServiceVLLM) Type() string { return ProtoVLLM }
-
-// ServiceLocalAI contains LocalAI-specific metadata
-type ServiceLocalAI struct {
-	Version string   `json:"version,omitempty"`
-	Models  []string `json:"models,omitempty"`
-	CPEs    []string `json:"cpes,omitempty"`
-}
-
-func (e ServiceLocalAI) Type() string { return ProtoLocalAI }
-
-// ServiceLMStudio contains LM Studio-specific metadata
-type ServiceLMStudio struct {
-	Version string   `json:"version,omitempty"`
-	Model   string   `json:"model,omitempty"`
-	CPEs    []string `json:"cpes,omitempty"`
-}
-
-func (e ServiceLMStudio) Type() string { return ProtoLMStudio }
-
-// ServiceTGI contains Text Generation Inference-specific metadata
-type ServiceTGI struct {
-	Version   string   `json:"version,omitempty"`
-	ModelID   string   `json:"model_id,omitempty"`
-	ModelType string   `json:"model_type,omitempty"`
-	CPEs      []string `json:"cpes,omitempty"`
-}
-
-func (e ServiceTGI) Type() string { return ProtoTGI }
