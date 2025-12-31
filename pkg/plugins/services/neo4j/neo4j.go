@@ -74,6 +74,7 @@ import (
 )
 
 type NEO4JPlugin struct{}
+type NEO4JTLSPlugin struct{}
 
 const NEO4J = "neo4j"
 
@@ -86,6 +87,7 @@ var boltMagic = []byte{0x60, 0x60, 0xB0, 0x17}
 
 func init() {
 	plugins.RegisterPlugin(&NEO4JPlugin{})
+	plugins.RegisterPlugin(&NEO4JTLSPlugin{})
 }
 
 func DetectNeo4j(conn net.Conn, timeout time.Duration) (string, bool, error) {
@@ -165,6 +167,39 @@ func (p *NEO4JPlugin) Type() plugins.Protocol {
 func (p *NEO4JPlugin) Priority() int {
 	// Run before HTTP (100) since Neo4j uses a dedicated port
 	return 50
+}
+
+func (p *NEO4JTLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	version, detected, err := DetectNeo4j(conn, timeout)
+	if !detected {
+		return nil, err
+	}
+
+	payload := plugins.ServiceNeo4j{}
+	if version != "" {
+		cpe := buildNeo4jCPE(version)
+		if cpe != "" {
+			payload.CPEs = []string{cpe}
+		}
+	}
+
+	return plugins.CreateServiceFrom(target, payload, true, version, plugins.TCPTLS), nil
+}
+
+func (p *NEO4JTLSPlugin) PortPriority(port uint16) bool {
+	return port == 7687
+}
+
+func (p *NEO4JTLSPlugin) Name() string {
+	return NEO4J
+}
+
+func (p *NEO4JTLSPlugin) Type() plugins.Protocol {
+	return plugins.TCPTLS
+}
+
+func (p *NEO4JTLSPlugin) Priority() int {
+	return 51
 }
 
 // buildBoltHandshake constructs the Bolt protocol handshake message.
@@ -279,6 +314,11 @@ func parseHelloResponse(response []byte) (string, bool, error) {
 
 	signature := body[1]
 	if signature == FAILURE_SIGNATURE {
+		// Check if FAILURE response contains Neo4j error codes (e.g., "Neo.ClientError.*")
+		// This identifies Neo4j even when authentication is required
+		if containsNeo4jErrorCode(body[2:]) {
+			return "Neo4j/unknown", true, nil // Neo4j detected but version unknown
+		}
 		return "", false, &utils.InvalidResponseErrorInfo{
 			Service: NEO4J,
 			Info:    "server returned FAILURE response",
@@ -294,6 +334,21 @@ func parseHelloResponse(response []byte) (string, bool, error) {
 	serverStr := extractServerField(body[2:])
 
 	return serverStr, true, nil
+}
+
+// containsNeo4jErrorCode checks if FAILURE response contains Neo4j-specific error codes.
+// Neo4j errors start with "Neo." (e.g., "Neo.ClientError.Security.Unauthorized")
+func containsNeo4jErrorCode(data []byte) bool {
+	// Look for "Neo." pattern in the response data
+	neo4jPrefix := []byte("Neo.")
+	for i := 0; i <= len(data)-len(neo4jPrefix); i++ {
+		if data[i] == 'N' && i+4 <= len(data) {
+			if string(data[i:i+4]) == "Neo." {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // extractServerField extracts the "server" field value from a PackStream map.
@@ -380,8 +435,8 @@ func parseNeo4jVersion(serverStr string) string {
 // Returns:
 //   - string: CPE string or empty if version is empty
 func buildNeo4jCPE(version string) string {
-	if version == "" {
-		return ""
+	if version == "" || version == "unknown" {
+		return "" // No CPE without a real version
 	}
 	return fmt.Sprintf("cpe:2.3:a:neo4j:neo4j:%s:*:*:*:*:*:*:*", version)
 }

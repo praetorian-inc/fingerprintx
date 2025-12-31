@@ -179,11 +179,57 @@ func TestBuildNeo4jCPE(t *testing.T) {
 			version: "",
 			want:    "",
 		},
+		{
+			name:    "unknown version (auth required)",
+			version: "unknown",
+			want:    "",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := buildNeo4jCPE(tt.version)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestContainsNeo4jErrorCode(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+		want bool
+	}{
+		{
+			name: "Neo4j unauthorized error",
+			data: []byte("codeNeo.ClientError.Security.Unauthorized"),
+			want: true,
+		},
+		{
+			name: "Neo4j general error",
+			data: []byte("Neo.DatabaseError.General.Unknown"),
+			want: true,
+		},
+		{
+			name: "no Neo4j error",
+			data: []byte("some other error message"),
+			want: false,
+		},
+		{
+			name: "empty data",
+			data: []byte{},
+			want: false,
+		},
+		{
+			name: "partial Neo",
+			data: []byte("Neo"),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := containsNeo4jErrorCode(tt.data)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -216,6 +262,24 @@ func TestPluginMethods(t *testing.T) {
 	t.Run("PortPriority", func(t *testing.T) {
 		assert.True(t, plugin.PortPriority(7687))
 		assert.False(t, plugin.PortPriority(7474))
+		assert.False(t, plugin.PortPriority(443))
+	})
+
+	t.Run("Priority", func(t *testing.T) {
+		// Should run before HTTP (100)
+		assert.Less(t, plugin.Priority(), 100)
+	})
+}
+
+func TestTLSPluginMethods(t *testing.T) {
+	plugin := &NEO4JTLSPlugin{}
+
+	t.Run("Name", func(t *testing.T) {
+		assert.Equal(t, "neo4j", plugin.Name())
+	})
+
+	t.Run("PortPriority", func(t *testing.T) {
+		assert.True(t, plugin.PortPriority(7687))
 		assert.False(t, plugin.PortPriority(443))
 	})
 
