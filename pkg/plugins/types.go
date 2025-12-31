@@ -489,7 +489,10 @@ type ServiceModbus struct{}
 func (e ServiceModbus) Type() string { return ProtoModbus }
 
 type ServiceMongoDB struct {
-	CPEs []string `json:"cpes,omitempty"`
+	MaxWireVersion int      `json:"maxWireVersion,omitempty"` // Wire protocol version (indicates capabilities, NOT precise version; e.g., wire 21 = MongoDB 7.0.x)
+	MinWireVersion int      `json:"minWireVersion,omitempty"` // Minimum wire protocol version supported
+	ServerType     string   `json:"serverType,omitempty"`     // "mongod" or "mongos"
+	CPEs           []string `json:"cpes,omitempty"`
 }
 
 func (e ServiceMongoDB) Type() string { return ProtoMongoDB }
