@@ -109,6 +109,14 @@ type MONGODBPlugin struct{}
 
 const MONGODB = "mongodb"
 
+// mongoDBMetadata holds enriched metadata extracted from MongoDB responses
+type mongoDBMetadata struct {
+	Version        string // MongoDB version string (e.g., "8.0.4") - only set if explicitly returned by server
+	MaxWireVersion int    // Maximum wire protocol version supported (indicates capabilities, NOT precise version)
+	MinWireVersion int    // Minimum wire protocol version supported
+	ServerType     string // "mongod" or "mongos"
+}
+
 // MongoDB wire protocol opcodes
 const (
 	OP_REPLY = 1
@@ -356,7 +364,211 @@ func parseBSONString(bsonDoc []byte, key string) string {
 	return ""
 }
 
+// parseBSONInt32 extracts an int32 value for a given key from a BSON document.
+// This is a minimal BSON parser focused on extracting int32 values for wire version fields.
+//
+// Parameters:
+//   - bsonDoc: The BSON document bytes to parse
+//   - key: The key name to search for
+//
+// Returns:
+//   - int32: The extracted value (0 if not found)
+//   - bool: true if the key was found and successfully extracted, false otherwise
+func parseBSONInt32(bsonDoc []byte, key string) (int32, bool) {
+	if len(bsonDoc) < 5 {
+		return 0, false
+	}
+
+	// BSON document format:
+	// int32 - document size
+	// elements...
+	// 0x00 - terminator
+
+	docSize := binary.LittleEndian.Uint32(bsonDoc[0:4])
+	if docSize > uint32(len(bsonDoc)) {
+		return 0, false
+	}
+
+	pos := 4 // Start after size field
+	for pos < len(bsonDoc)-1 {
+		// Check for document terminator
+		if bsonDoc[pos] == 0x00 {
+			break
+		}
+
+		// Read element type
+		elementType := bsonDoc[pos]
+		pos++
+
+		// Read key (null-terminated string)
+		keyStart := pos
+		for pos < len(bsonDoc) && bsonDoc[pos] != 0x00 {
+			pos++
+		}
+		if pos >= len(bsonDoc) {
+			return 0, false
+		}
+		elementKey := string(bsonDoc[keyStart:pos])
+		pos++ // Skip null terminator
+
+		// If this is our target key and it's an int32 type (0x10)
+		if elementKey == key && elementType == 0x10 {
+			// int32 format: 4 bytes, little-endian
+			if pos+4 > len(bsonDoc) {
+				return 0, false
+			}
+			value := int32(binary.LittleEndian.Uint32(bsonDoc[pos : pos+4]))
+			return value, true
+		}
+
+		// Skip value based on type
+		switch elementType {
+		case 0x01: // double
+			pos += 8
+		case 0x02: // string
+			if pos+4 > len(bsonDoc) {
+				return 0, false
+			}
+			strLen := binary.LittleEndian.Uint32(bsonDoc[pos : pos+4])
+			pos += 4 + int(strLen)
+		case 0x03, 0x04: // document, array
+			if pos+4 > len(bsonDoc) {
+				return 0, false
+			}
+			subDocLen := binary.LittleEndian.Uint32(bsonDoc[pos : pos+4])
+			pos += int(subDocLen)
+		case 0x05: // binary
+			if pos+5 > len(bsonDoc) {
+				return 0, false
+			}
+			binLen := binary.LittleEndian.Uint32(bsonDoc[pos : pos+4])
+			pos += 5 + int(binLen)
+		case 0x07: // ObjectId
+			pos += 12
+		case 0x08: // boolean
+			pos++
+		case 0x09: // UTC datetime
+			pos += 8
+		case 0x0A: // null
+			// no value
+		case 0x10: // int32
+			pos += 4
+		case 0x11, 0x12: // timestamp, int64
+			pos += 8
+		default:
+			// Unknown type, cannot continue parsing safely
+			return 0, false
+		}
+	}
+
+	return 0, false
+}
+
+// parseMaxWireVersion extracts maxWireVersion from a BSON document.
+// Wire versions indicate protocol CAPABILITIES, not precise MongoDB versions.
+// Wire versions are bumped for feature milestones, not every patch release:
+//   - Wire 6 = MongoDB 3.6.x (OP_MSG support)
+//   - Wire 7 = MongoDB 4.0.x (replica set transactions)
+//   - Wire 8 = MongoDB 4.2.x (sharded transactions)
+//   - Wire 9 = MongoDB 4.4.x (resumable initial sync)
+//   - Wire 13 = MongoDB 5.0.x
+//   - Wire 17 = MongoDB 6.0.x
+//   - Wire 21 = MongoDB 7.0.x
+//   - Wire 25 = MongoDB 8.0.x
+//
+// IMPORTANT: All patch versions within a major.minor share the same wire version.
+// e.g., MongoDB 7.0.0, 7.0.1, 7.0.15 all report maxWireVersion=21.
+// Do NOT use wire version to infer precise version - use the version field instead.
+//
+// Parameters:
+//   - bsonDoc: The BSON document bytes to parse
+//
+// Returns:
+//   - int: maxWireVersion if found, 0 otherwise
+//   - bool: true if found, false otherwise
+func parseMaxWireVersion(bsonDoc []byte) (int, bool) {
+	value, found := parseBSONInt32(bsonDoc, "maxWireVersion")
+	return int(value), found
+}
+
+// parseMinWireVersion extracts minWireVersion from a BSON document.
+// Indicates the minimum wire protocol version supported by the server.
+// See parseMaxWireVersion for wire version semantics.
+//
+// Parameters:
+//   - bsonDoc: The BSON document bytes to parse
+//
+// Returns:
+//   - int: minWireVersion if found, 0 otherwise
+//   - bool: true if found, false otherwise
+func parseMinWireVersion(bsonDoc []byte) (int, bool) {
+	value, found := parseBSONInt32(bsonDoc, "minWireVersion")
+	return int(value), found
+}
+
+// parseServerType extracts server type from a BSON document.
+// If msg field contains "isdbgrid", this is a mongos (query router).
+// Otherwise, it's a mongod (database server).
+//
+// Parameters:
+//   - bsonDoc: The BSON document bytes to parse
+//
+// Returns:
+//   - string: "mongos" if msg=="isdbgrid", "mongod" otherwise
+func parseServerType(bsonDoc []byte) string {
+	msg := parseBSONString(bsonDoc, "msg")
+	if msg == "isdbgrid" {
+		return "mongos"
+	}
+	return "mongod"
+}
+
+// parseMongoDBMsgMetadata extracts complete metadata from an OP_MSG response.
+//
+// Parameters:
+//   - response: The raw OP_MSG response bytes from the MongoDB server
+//
+// Returns:
+//   - mongoDBMetadata: Extracted metadata (version, wire versions, server type)
+func parseMongoDBMsgMetadata(response []byte) mongoDBMetadata {
+	metadata := mongoDBMetadata{
+		ServerType: "mongod", // Default to mongod
+	}
+
+	// OP_MSG structure:
+	// Header (16 bytes) + flagBits (4 bytes) + section kind (1 byte) + BSON document
+	// BSON documents start at offset 21
+
+	if len(response) < 21 {
+		return metadata
+	}
+
+	// BSON documents start at offset 21
+	bsonDoc := response[21:]
+
+	// Extract version (try "version" first, then "versionString")
+	version := parseBSONString(bsonDoc, "version")
+	if version == "" {
+		version = parseBSONString(bsonDoc, "versionString")
+	}
+	metadata.Version = version
+
+	// Extract wire versions
+	if maxWire, found := parseMaxWireVersion(bsonDoc); found {
+		metadata.MaxWireVersion = maxWire
+	}
+	if minWire, found := parseMinWireVersion(bsonDoc); found {
+		metadata.MinWireVersion = minWire
+	}
+
+	// Extract server type (mongos vs mongod)
+	metadata.ServerType = parseServerType(bsonDoc)
+
+	return metadata
+}
+
 // parseMongoDBMsgVersion attempts to extract version information from an OP_MSG response.
+// Deprecated: Use parseMongoDBMsgMetadata for enriched metadata extraction.
 //
 // Parameters:
 //   - response: The raw OP_MSG response bytes from the MongoDB server
@@ -364,29 +576,56 @@ func parseBSONString(bsonDoc []byte, key string) string {
 // Returns:
 //   - string: The version string if found, empty string otherwise
 func parseMongoDBMsgVersion(response []byte) string {
-	// OP_MSG structure:
-	// Header (16 bytes) + flagBits (4 bytes) + section kind (1 byte) + BSON document
-	// BSON documents start at offset 21
+	metadata := parseMongoDBMsgMetadata(response)
+	return metadata.Version
+}
 
-	if len(response) < 21 {
-		return ""
+// parseMongoDBMetadata extracts complete metadata from an OP_REPLY response.
+//
+// Parameters:
+//   - response: The raw OP_REPLY response bytes from the MongoDB server
+//
+// Returns:
+//   - mongoDBMetadata: Extracted metadata (version, wire versions, server type)
+func parseMongoDBMetadata(response []byte) mongoDBMetadata {
+	metadata := mongoDBMetadata{
+		ServerType: "mongod", // Default to mongod
 	}
 
-	// BSON documents start at offset 21
-	bsonDoc := response[21:]
+	// OP_REPLY structure:
+	// Header (16 bytes) + ResponseFlags (4) + CursorID (8) + StartingFrom (4) + NumberReturned (4) = 36 bytes
+	// Then BSON documents start at offset 36
 
-	// Try to extract version from the response
-	// MongoDB typically returns version in the "version" field
+	if len(response) < 36 {
+		return metadata
+	}
+
+	// BSON documents start at offset 36
+	bsonDoc := response[36:]
+
+	// Extract version (try "version" first, then "versionString")
 	version := parseBSONString(bsonDoc, "version")
-	if version != "" {
-		return version
+	if version == "" {
+		version = parseBSONString(bsonDoc, "versionString")
+	}
+	metadata.Version = version
+
+	// Extract wire versions
+	if maxWire, found := parseMaxWireVersion(bsonDoc); found {
+		metadata.MaxWireVersion = maxWire
+	}
+	if minWire, found := parseMinWireVersion(bsonDoc); found {
+		metadata.MinWireVersion = minWire
 	}
 
-	// Fallback: some responses use "versionString"
-	return parseBSONString(bsonDoc, "versionString")
+	// Extract server type (mongos vs mongod)
+	metadata.ServerType = parseServerType(bsonDoc)
+
+	return metadata
 }
 
 // parseMongoDBVersion attempts to extract version information from an OP_REPLY response.
+// Deprecated: Use parseMongoDBMetadata for enriched metadata extraction.
 //
 // Parameters:
 //   - response: The raw OP_REPLY response bytes from the MongoDB server
@@ -394,26 +633,8 @@ func parseMongoDBMsgVersion(response []byte) string {
 // Returns:
 //   - string: The version string if found, empty string otherwise
 func parseMongoDBVersion(response []byte) string {
-	// OP_REPLY structure:
-	// Header (16 bytes) + ResponseFlags (4) + CursorID (8) + StartingFrom (4) + NumberReturned (4) = 36 bytes
-	// Then BSON documents start at offset 36
-
-	if len(response) < 36 {
-		return ""
-	}
-
-	// BSON documents start at offset 36
-	bsonDoc := response[36:]
-
-	// Try to extract version from the response
-	// MongoDB typically returns version in the "version" field
-	version := parseBSONString(bsonDoc, "version")
-	if version != "" {
-		return version
-	}
-
-	// Fallback: some responses use "versionString"
-	return parseBSONString(bsonDoc, "versionString")
+	metadata := parseMongoDBMetadata(response)
+	return metadata.Version
 }
 
 // buildMongoDBMsgQuery constructs an OP_MSG wire protocol message for the
@@ -635,26 +856,26 @@ func tryGetMongoDBVersion(conn net.Conn, timeout time.Duration) string {
 //   - timeout: Timeout duration for network operations
 //
 // Returns:
-//   - string: Version string if detected
-//   - bool: true if this appears to be MongoDB (even if version extraction fails)
+//   - mongoDBMetadata: Enriched metadata (version, wire versions, server type)
+//   - bool: true if this appears to be MongoDB (even if metadata extraction fails)
 //   - error: Error details if detection failed
-func tryMongoDBMsgProtocol(conn net.Conn, timeout time.Duration) (string, bool, error) {
+func tryMongoDBMsgProtocol(conn net.Conn, timeout time.Duration) (mongoDBMetadata, bool, error) {
 	// Try "hello" command first (modern MongoDB 4.4+)
 	requestID := uint32(3)
 	helloMsg := buildMongoDBMsgQuery("hello", requestID)
 
 	response, err := utils.SendRecv(conn, helloMsg, timeout)
 	if err != nil {
-		return "", false, err
+		return mongoDBMetadata{}, false, err
 	}
 	if len(response) == 0 {
-		return "", true, &utils.ServerNotEnable{}
+		return mongoDBMetadata{}, true, &utils.ServerNotEnable{}
 	}
 
 	isMongoDB, err := checkMongoDBMsgResponse(response, requestID)
 	if isMongoDB && err == nil {
-		version := parseMongoDBMsgVersion(response)
-		return version, true, nil
+		metadata := parseMongoDBMsgMetadata(response)
+		return metadata, true, nil
 	}
 
 	// Try legacy isMaster command as fallback
@@ -663,19 +884,19 @@ func tryMongoDBMsgProtocol(conn net.Conn, timeout time.Duration) (string, bool, 
 
 	response, err = utils.SendRecv(conn, isMasterMsg, timeout)
 	if err != nil {
-		return "", false, err
+		return mongoDBMetadata{}, false, err
 	}
 	if len(response) == 0 {
-		return "", true, &utils.ServerNotEnable{}
+		return mongoDBMetadata{}, true, &utils.ServerNotEnable{}
 	}
 
 	isMongoDB, err = checkMongoDBMsgResponse(response, requestID)
 	if !isMongoDB {
-		return "", true, &utils.InvalidResponseError{Service: MONGODB}
+		return mongoDBMetadata{}, true, &utils.InvalidResponseError{Service: MONGODB}
 	}
 
-	version := parseMongoDBMsgVersion(response)
-	return version, true, nil
+	metadata := parseMongoDBMsgMetadata(response)
+	return metadata, true, nil
 }
 
 // tryMongoDBQueryProtocol attempts MongoDB detection using the OP_QUERY wire protocol.
@@ -687,26 +908,26 @@ func tryMongoDBMsgProtocol(conn net.Conn, timeout time.Duration) (string, bool, 
 //   - timeout: Timeout duration for network operations
 //
 // Returns:
-//   - string: Version string if detected
-//   - bool: true if this appears to be MongoDB (even if version extraction fails)
+//   - mongoDBMetadata: Enriched metadata (version, wire versions, server type)
+//   - bool: true if this appears to be MongoDB (even if metadata extraction fails)
 //   - error: Error details if detection failed
-func tryMongoDBQueryProtocol(conn net.Conn, timeout time.Duration) (string, bool, error) {
+func tryMongoDBQueryProtocol(conn net.Conn, timeout time.Duration) (mongoDBMetadata, bool, error) {
 	// Try "hello" command first (modern MongoDB 4.4+)
 	requestID := uint32(1)
 	helloQuery := buildMongoDBQuery("hello", requestID)
 
 	response, err := utils.SendRecv(conn, helloQuery, timeout)
 	if err != nil {
-		return "", false, err
+		return mongoDBMetadata{}, false, err
 	}
 	if len(response) == 0 {
-		return "", true, &utils.ServerNotEnable{}
+		return mongoDBMetadata{}, true, &utils.ServerNotEnable{}
 	}
 
 	isMongoDB, err := checkMongoDBResponse(response, requestID)
 	if isMongoDB && err == nil {
-		version := parseMongoDBVersion(response)
-		return version, true, nil
+		metadata := parseMongoDBMetadata(response)
+		return metadata, true, nil
 	}
 
 	// Try legacy isMaster command as fallback
@@ -715,19 +936,19 @@ func tryMongoDBQueryProtocol(conn net.Conn, timeout time.Duration) (string, bool
 
 	response, err = utils.SendRecv(conn, isMasterQuery, timeout)
 	if err != nil {
-		return "", false, err
+		return mongoDBMetadata{}, false, err
 	}
 	if len(response) == 0 {
-		return "", true, &utils.ServerNotEnable{}
+		return mongoDBMetadata{}, true, &utils.ServerNotEnable{}
 	}
 
 	isMongoDB, err = checkMongoDBResponse(response, requestID)
 	if !isMongoDB {
-		return "", true, &utils.InvalidResponseError{Service: MONGODB}
+		return mongoDBMetadata{}, true, &utils.InvalidResponseError{Service: MONGODB}
 	}
 
-	version := parseMongoDBVersion(response)
-	return version, true, nil
+	metadata := parseMongoDBMetadata(response)
+	return metadata, true, nil
 }
 
 // DetectMongoDB performs MongoDB fingerprinting using a layered fallback approach.
@@ -735,12 +956,14 @@ func tryMongoDBQueryProtocol(conn net.Conn, timeout time.Duration) (string, bool
 // to ensure compatibility across all MongoDB versions from ancient to unreleased.
 //
 // Detection Strategy:
-//  1. DETECTION PHASE: Use hello/isMaster commands to detect MongoDB
+//  1. DETECTION PHASE: Use hello/isMaster commands to detect MongoDB and extract metadata
 //     - PRIMARY PATH (OP_QUERY): Try OP_QUERY + "hello", then OP_QUERY + "isMaster"
 //       Works on ALL MongoDB versions, including 5.1+ (handshake exception)
+//       Extracts: version, maxWireVersion, minWireVersion, serverType
 //     - SECONDARY PATH (OP_MSG): Try OP_MSG + "hello", then OP_MSG + "isMaster"
 //       Works on MongoDB 3.6+ only
-//  2. ENRICHMENT PHASE: If detected, try to get version using buildInfo command
+//       Extracts: version, maxWireVersion, minWireVersion, serverType
+//  2. ENRICHMENT PHASE: If version not found in hello/isMaster, try buildInfo
 //     - Attempts buildInfo with both OP_QUERY and OP_MSG protocols
 //     - If buildInfo fails (e.g., requires auth), still returns MongoDB detection
 //
@@ -749,29 +972,33 @@ func tryMongoDBQueryProtocol(conn net.Conn, timeout time.Duration) (string, bool
 //   - timeout: Timeout duration for network operations
 //
 // Returns:
-//   - string: Version string if retrieved, empty string otherwise
+//   - mongoDBMetadata: Enriched metadata (version, wire versions, server type)
 //   - bool: true if this appears to be MongoDB
 //   - error: Error details if detection failed
-func DetectMongoDB(conn net.Conn, timeout time.Duration) (string, bool, error) {
+func DetectMongoDB(conn net.Conn, timeout time.Duration) (mongoDBMetadata, bool, error) {
 	// PHASE 1: Detect MongoDB using hello/isMaster commands
 	// Try OP_QUERY first (works on all versions)
-	_, isDetected, err := tryMongoDBQueryProtocol(conn, timeout)
+	metadata, isDetected, err := tryMongoDBQueryProtocol(conn, timeout)
 	if isDetected && err == nil {
-		// MongoDB detected! Now try to enrich with version info
-		version := tryGetMongoDBVersion(conn, timeout)
-		return version, true, nil
+		// MongoDB detected! If version not found in hello/isMaster, try buildInfo
+		if metadata.Version == "" {
+			metadata.Version = tryGetMongoDBVersion(conn, timeout)
+		}
+		return metadata, true, nil
 	}
 
 	// Fallback to OP_MSG (MongoDB 3.6+)
-	_, isDetected, err = tryMongoDBMsgProtocol(conn, timeout)
+	metadata, isDetected, err = tryMongoDBMsgProtocol(conn, timeout)
 	if isDetected && err == nil {
-		// MongoDB detected! Now try to enrich with version info
-		version := tryGetMongoDBVersion(conn, timeout)
-		return version, true, nil
+		// MongoDB detected! If version not found in hello/isMaster, try buildInfo
+		if metadata.Version == "" {
+			metadata.Version = tryGetMongoDBVersion(conn, timeout)
+		}
+		return metadata, true, nil
 	}
 
 	// Both detection methods failed
-	return "", false, &utils.InvalidResponseError{Service: MONGODB}
+	return mongoDBMetadata{}, false, &utils.InvalidResponseError{Service: MONGODB}
 }
 
 // buildMongoDBCPE constructs a CPE (Common Platform Enumeration) string for MongoDB.
@@ -793,18 +1020,22 @@ func buildMongoDBCPE(version string) string {
 }
 
 func (p *MONGODBPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	version, check, err := DetectMongoDB(conn, timeout)
+	metadata, check, err := DetectMongoDB(conn, timeout)
 	if check && err != nil {
 		return nil, nil
 	} else if check && err == nil {
-		payload := plugins.ServiceMongoDB{}
-		if version != "" {
-			cpe := buildMongoDBCPE(version)
+		payload := plugins.ServiceMongoDB{
+			MaxWireVersion: metadata.MaxWireVersion,
+			MinWireVersion: metadata.MinWireVersion,
+			ServerType:     metadata.ServerType,
+		}
+		if metadata.Version != "" {
+			cpe := buildMongoDBCPE(metadata.Version)
 			if cpe != "" {
 				payload.CPEs = []string{cpe}
 			}
 		}
-		return plugins.CreateServiceFrom(target, payload, false, version, plugins.TCP), nil
+		return plugins.CreateServiceFrom(target, payload, false, metadata.Version, plugins.TCP), nil
 	}
 	return nil, err
 }
