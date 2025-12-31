@@ -37,6 +37,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mqtt/mqtt5"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mssql"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mysql"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/neo4j"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/netbios"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ntp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/openvpn"
