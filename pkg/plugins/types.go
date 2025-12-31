@@ -56,6 +56,7 @@ const (
 	ProtoMQTT       = "mqtt"
 	ProtoMSSQL      = "mssql"
 	ProtoMySQL      = "mysql"
+	ProtoNeo4j      = "neo4j"
 	ProtoNetbios    = "netbios"
 	ProtoNTP        = "ntp"
 	ProtoOracle     = "oracle"
@@ -178,6 +179,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoMongoDB:
 		var p ServiceMongoDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoNeo4j:
+		var p ServiceNeo4j
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoLDAPS:
@@ -493,6 +498,12 @@ type ServiceMongoDB struct {
 }
 
 func (e ServiceMongoDB) Type() string { return ProtoMongoDB }
+
+type ServiceNeo4j struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceNeo4j) Type() string { return ProtoNeo4j }
 
 type ServiceRtsp struct {
 	ServerInfo string `json:"serverInfo"`
