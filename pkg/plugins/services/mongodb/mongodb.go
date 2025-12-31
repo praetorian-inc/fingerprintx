@@ -111,8 +111,8 @@ const MONGODB = "mongodb"
 
 // mongoDBMetadata holds enriched metadata extracted from MongoDB responses
 type mongoDBMetadata struct {
-	Version        string // MongoDB version string (e.g., "8.0.4")
-	MaxWireVersion int    // Maximum wire protocol version supported
+	Version        string // MongoDB version string (e.g., "8.0.4") - only set if explicitly returned by server
+	MaxWireVersion int    // Maximum wire protocol version supported (indicates capabilities, NOT precise version)
 	MinWireVersion int    // Minimum wire protocol version supported
 	ServerType     string // "mongod" or "mongos"
 }
@@ -465,7 +465,20 @@ func parseBSONInt32(bsonDoc []byte, key string) (int32, bool) {
 }
 
 // parseMaxWireVersion extracts maxWireVersion from a BSON document.
-// Wire versions map to MongoDB versions and indicate protocol capabilities.
+// Wire versions indicate protocol CAPABILITIES, not precise MongoDB versions.
+// Wire versions are bumped for feature milestones, not every patch release:
+//   - Wire 6 = MongoDB 3.6.x (OP_MSG support)
+//   - Wire 7 = MongoDB 4.0.x (replica set transactions)
+//   - Wire 8 = MongoDB 4.2.x (sharded transactions)
+//   - Wire 9 = MongoDB 4.4.x (resumable initial sync)
+//   - Wire 13 = MongoDB 5.0.x
+//   - Wire 17 = MongoDB 6.0.x
+//   - Wire 21 = MongoDB 7.0.x
+//   - Wire 25 = MongoDB 8.0.x
+//
+// IMPORTANT: All patch versions within a major.minor share the same wire version.
+// e.g., MongoDB 7.0.0, 7.0.1, 7.0.15 all report maxWireVersion=21.
+// Do NOT use wire version to infer precise version - use the version field instead.
 //
 // Parameters:
 //   - bsonDoc: The BSON document bytes to parse
@@ -480,6 +493,7 @@ func parseMaxWireVersion(bsonDoc []byte) (int, bool) {
 
 // parseMinWireVersion extracts minWireVersion from a BSON document.
 // Indicates the minimum wire protocol version supported by the server.
+// See parseMaxWireVersion for wire version semantics.
 //
 // Parameters:
 //   - bsonDoc: The BSON document bytes to parse
