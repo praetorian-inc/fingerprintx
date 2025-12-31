@@ -178,8 +178,7 @@ func (p *NEO4JPlugin) Type() plugins.Protocol {
 }
 
 func (p *NEO4JPlugin) Priority() int {
-	// Run before HTTP (100) since Neo4j uses a dedicated port
-	return 50
+	return -1
 }
 
 func (p *NEO4JTLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
@@ -212,10 +211,9 @@ func (p *NEO4JTLSPlugin) Type() plugins.Protocol {
 }
 
 func (p *NEO4JTLSPlugin) Priority() int {
-	return 51
+	return 0
 }
 
-// boltVersion encodes a Bolt version as uint32: 00 00 MINOR MAJOR (big-endian)
 func boltVersion(major, minor byte) uint32 {
 	return uint32(minor)<<8 | uint32(major)
 }
