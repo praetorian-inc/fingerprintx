@@ -53,6 +53,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/smb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/smtp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/snmp"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/snpp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ssh"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/stun"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/telnet"
