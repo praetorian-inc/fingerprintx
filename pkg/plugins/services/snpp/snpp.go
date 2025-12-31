@@ -16,7 +16,6 @@ package snpp
 
 import (
 	"bytes"
-	"fmt"
 	"net"
 	"regexp"
 	"time"
