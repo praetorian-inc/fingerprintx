@@ -38,6 +38,7 @@ const TypeService string = "service"
 const (
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
+	ProtoDB2        = "db2"
 	ProtoCassandra  = "cassandra"
 	ProtoCouchDB    = "couchdb"
 	ProtoEcho          = "echo"
@@ -48,12 +49,14 @@ const (
 	ProtoHTTP2      = "http2"
 	ProtoIMAP       = "imap"
 	ProtoIMAPS      = "imaps"
+	ProtoInfluxDB   = "influxdb"
 	ProtoIPMI       = "ipmi"
 	ProtoIPSEC      = "ipsec"
 	ProtoJDWP       = "jdwp"
 	ProtoKafka      = "kafka"
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
+	ProtoMemcached  = "memcached"
 	ProtoModbus     = "modbus"
 	ProtoMongoDB    = "mongodb"
 	ProtoMQTT       = "mqtt"
@@ -80,6 +83,7 @@ const (
 	ProtoSNPP       = "snpp"
 	ProtoSSH        = "ssh"
 	ProtoStun       = "stun"
+	ProtoSybase     = "sybase"
 	ProtoTelnet     = "telnet"
 	ProtoVNC        = "vnc"
 	ProtoUnknown    = "unknown"
@@ -106,6 +110,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoCouchDB:
 		var p ServiceCouchDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoDB2:
+		var p ServiceDB2
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoCassandra:
@@ -204,6 +212,10 @@ func (e Service) Metadata() Metadata {
 		var p ServiceSSH
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoSybase:
+		var p ServiceSybase
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoIMAP:
 		var p ServiceIMAP
 		_ = json.Unmarshal(e.Raw, &p)
@@ -224,8 +236,16 @@ func (e Service) Metadata() Metadata {
 		var p ServiceIMAPS
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoInfluxDB:
+		var p ServiceInfluxDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoMQTT:
 		var p ServiceMQTT
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMemcached:
+		var p ServiceMemcached
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoPOP3:
@@ -415,6 +435,12 @@ type ServiceIMAPS struct {
 
 func (e ServiceIMAPS) Type() string { return ProtoIMAPS }
 
+type ServiceInfluxDB struct {
+	CPEs []string `json:"cpes,omitempty"` // Common Platform Enumeration identifiers for vulnerability tracking
+}
+
+func (e ServiceInfluxDB) Type() string { return ProtoInfluxDB }
+
 type ServiceIPSEC struct {
 	ResponderISP string `json:"responderISP"`
 	MessageID    string `json:"messageID"`
@@ -490,6 +516,13 @@ type ServiceSSH struct {
 
 func (e ServiceSSH) Type() string { return ProtoSSH }
 
+type ServiceSybase struct {
+	CPEs    []string `json:"cpes,omitempty"`
+	Version string   `json:"version,omitempty"`
+}
+
+func (e ServiceSybase) Type() string { return ProtoSybase }
+
 type ServiceLDAP struct{}
 
 func (e ServiceLDAP) Type() string { return ProtoLDAP }
@@ -515,6 +548,13 @@ func (e ServiceOpenVPN) Type() string { return ProtoOpenVPN }
 type ServiceMQTT struct{}
 
 func (e ServiceMQTT) Type() string { return ProtoMQTT }
+
+type ServiceMemcached struct {
+	Version string   `json:"version,omitempty"`
+	CPEs    []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceMemcached) Type() string { return ProtoMemcached }
 
 type ServiceModbus struct{}
 
@@ -550,6 +590,13 @@ type ServiceCouchDB struct {
 }
 
 func (e ServiceCouchDB) Type() string { return ProtoCouchDB }
+
+type ServiceDB2 struct {
+	ServerName string   `json:"serverName,omitempty"` // DB2 instance name
+	CPEs       []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceDB2) Type() string { return ProtoDB2 }
 
 type ServiceCassandra struct {
 	Product          string   `json:"product,omitempty"`          // "Apache Cassandra", "ScyllaDB", "DataStax Enterprise"

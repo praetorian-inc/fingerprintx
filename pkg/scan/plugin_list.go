@@ -20,6 +20,7 @@ package scan
 import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/cassandra"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/couchdb"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/db2"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dhcp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dns"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/echo"
@@ -27,6 +28,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ftp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/http"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/imap"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/influxdb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ipmi"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ipsec"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/jdwp"
@@ -34,6 +36,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/kafka/kafkaOld"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ldap"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/linuxrpc"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/memcached"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/modbus"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mongodb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mqtt/mqtt3"
@@ -57,6 +60,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/snpp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ssh"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/stun"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/sybase"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/telnet"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/vnc"
 )
