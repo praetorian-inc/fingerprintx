@@ -265,6 +265,44 @@ func TestPluginMetadata(t *testing.T) {
 	assert.False(t, plugin.PortPriority(80), "Port 80 should not be prioritized")
 }
 
+// TestTLSPluginMetadata tests TLS plugin metadata methods
+func TestTLSPluginMetadata(t *testing.T) {
+	plugin := &COUCHDBTLSPlugin{}
+
+	// Test Name
+	assert.Equal(t, "couchdb", plugin.Name())
+
+	// Test Type
+	assert.Equal(t, plugins.TCPTLS, plugin.Type())
+
+	// Test Priority
+	assert.Equal(t, 101, plugin.Priority())
+
+	// Test PortPriority
+	assert.True(t, plugin.PortPriority(6984), "Port 6984 should be prioritized")
+	assert.False(t, plugin.PortPriority(5984), "Port 5984 should not be prioritized")
+	assert.False(t, plugin.PortPriority(8080), "Port 8080 should not be prioritized")
+	assert.False(t, plugin.PortPriority(80), "Port 80 should not be prioritized")
+}
+
+// TestPluginsDifferentPorts verifies plain and TLS plugins use different ports
+func TestPluginsDifferentPorts(t *testing.T) {
+	plainPlugin := &COUCHDBPlugin{}
+	tlsPlugin := &COUCHDBTLSPlugin{}
+
+	// Verify plain plugin prioritizes 5984, not 6984
+	assert.True(t, plainPlugin.PortPriority(5984), "Plain plugin should prioritize port 5984")
+	assert.False(t, plainPlugin.PortPriority(6984), "Plain plugin should NOT prioritize port 6984")
+
+	// Verify TLS plugin prioritizes 6984, not 5984
+	assert.True(t, tlsPlugin.PortPriority(6984), "TLS plugin should prioritize port 6984")
+	assert.False(t, tlsPlugin.PortPriority(5984), "TLS plugin should NOT prioritize port 5984")
+
+	// Verify different transport types
+	assert.Equal(t, plugins.TCP, plainPlugin.Type(), "Plain plugin should use TCP transport")
+	assert.Equal(t, plugins.TCPTLS, tlsPlugin.Type(), "TLS plugin should use TCPTLS transport")
+}
+
 // TestEdgeCases tests edge cases in parsing
 func TestEdgeCases(t *testing.T) {
 	tests := []struct {

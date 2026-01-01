@@ -95,11 +95,14 @@ import (
 )
 
 const COUCHDB = "couchdb"
+const COUCHDBTLS = "couchdb"
 
 type COUCHDBPlugin struct{}
+type COUCHDBTLSPlugin struct{}
 
 func init() {
 	plugins.RegisterPlugin(&COUCHDBPlugin{})
+	plugins.RegisterPlugin(&COUCHDBTLSPlugin{})
 }
 
 // couchdbRootResponse represents the JSON structure returned by GET /
@@ -200,26 +203,29 @@ func buildCouchDBHTTPRequest(path, host string) string {
 //
 // Parameters:
 //   - conn: Network connection to the target service
+//   - target: Target information for service creation
 //   - timeout: Timeout duration for network operations
-//   - host: Target host:port for HTTP Host header
+//   - tls: Whether the connection uses TLS
 //
 // Returns:
-//   - bool: true if CouchDB detected
-//   - string: Version string (empty if not found)
+//   - *plugins.Service: Service information if CouchDB detected, nil otherwise
 //   - error: Error details if detection failed
-func detectCouchDB(conn net.Conn, timeout time.Duration, host string) (bool, string, error) {
+func detectCouchDB(conn net.Conn, target plugins.Target, timeout time.Duration, tls bool) (*plugins.Service, error) {
+	// Build host string for HTTP Host header
+	host := fmt.Sprintf("%s:%d", target.Host, target.Address.Port())
+
 	// Build HTTP GET / request
 	request := buildCouchDBHTTPRequest("/", host)
 
 	// Send request and receive response
 	response, err := utils.SendRecv(conn, []byte(request), timeout)
 	if err != nil {
-		return false, "", err
+		return nil, err
 	}
 
 	// Empty response check
 	if len(response) == 0 {
-		return false, "", &utils.InvalidResponseError{Service: COUCHDB}
+		return nil, nil
 	}
 
 	// HTTP responses typically have headers followed by blank line, then body
@@ -245,34 +251,23 @@ func detectCouchDB(conn net.Conn, timeout time.Duration, host string) (bool, str
 	// Parse CouchDB response
 	detected, version := parseCouchDBResponse(jsonBody)
 	if !detected {
-		return false, "", &utils.InvalidResponseError{Service: COUCHDB}
-	}
-
-	return true, version, nil
-}
-
-func (p *COUCHDBPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	// Build host string for HTTP Host header
-	host := fmt.Sprintf("%s:%d", target.Host, target.Address.Port())
-
-	// Phase 1: Detection - Determine if this is CouchDB
-	detected, version, err := detectCouchDB(conn, timeout, host)
-	if err != nil {
-		return nil, err
-	}
-
-	if !detected {
 		return nil, nil
 	}
 
-	// Phase 2: Enrichment - Build service metadata
+	// Build service metadata
 	cpe := buildCouchDBCPE(version)
-
 	payload := plugins.ServiceCouchDB{
 		CPEs: []string{cpe},
 	}
 
+	if tls {
+		return plugins.CreateServiceFrom(target, payload, true, version, plugins.TCPTLS), nil
+	}
 	return plugins.CreateServiceFrom(target, payload, false, version, plugins.TCP), nil
+}
+
+func (p *COUCHDBPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return detectCouchDB(conn, target, timeout, false)
 }
 
 func (p *COUCHDBPlugin) PortPriority(port uint16) bool {
@@ -289,4 +284,24 @@ func (p *COUCHDBPlugin) Type() plugins.Protocol {
 
 func (p *COUCHDBPlugin) Priority() int {
 	return 100
+}
+
+func (p *COUCHDBTLSPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
+	return detectCouchDB(conn, target, timeout, true)
+}
+
+func (p *COUCHDBTLSPlugin) PortPriority(port uint16) bool {
+	return port == 6984
+}
+
+func (p *COUCHDBTLSPlugin) Name() string {
+	return COUCHDBTLS
+}
+
+func (p *COUCHDBTLSPlugin) Type() plugins.Protocol {
+	return plugins.TCPTLS
+}
+
+func (p *COUCHDBTLSPlugin) Priority() int {
+	return 101
 }
