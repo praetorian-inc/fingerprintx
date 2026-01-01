@@ -427,7 +427,9 @@ type ServiceRedis struct {
 func (e ServiceRedis) Type() string { return ProtoRedis }
 
 type ServiceFTP struct {
-	Banner         string `json:"banner"`
+	Banner     string   `json:"banner"`
+	Confidence string   `json:"confidence,omitempty"` // Detection confidence: "high", "medium", or "low"
+	CPEs       []string `json:"cpes,omitempty"`
 }
 
 func (e ServiceFTP) Type() string { return ProtoFTP }
