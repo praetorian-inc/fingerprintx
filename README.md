@@ -196,3 +196,4 @@ $ cat input.txt | fingerprintx --json
 * [qwetboy10](https://github.com/qwetboy10)
 * [jwhenry28](https://github.com/jwhenry28)
 * [noahtutt](https://github.com/noahtutt)
+* [nsportsman](https://github.com/nsportsman)
