@@ -17,6 +17,8 @@ package mysql
 import (
 	"fmt"
 	"net"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
@@ -64,6 +66,32 @@ const (
 	MYSQL = "MySQL"
 )
 
+// Version detection regex patterns for MySQL-family servers
+// Priority order: Aurora → MariaDB → Percona → MySQL
+var (
+	// Aurora MySQL: {mysql_major}.mysql_aurora.{aurora_version}
+	auroraRegex = regexp.MustCompile(`(\d+\.\d+)\.mysql_aurora\.(\d+\.\d+\.\d+)`)
+
+	// MariaDB: {major}.{minor}.{patch}-MariaDB{optional-suffix}
+	// Note: Older versions have "5.5.5-" prefix (RPL_VERSION_HACK) which must be stripped
+	mariadbRegex = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)-MariaDB`)
+
+	// Percona Server: {base_mysql_version}-{percona_build}
+	perconaRegex = regexp.MustCompile(`^(\d+\.\d+\.\d+-\d+)`)
+
+	// MySQL (Oracle): {major}.{minor}.{patch}{optional-suffix}
+	mysqlRegex = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)`)
+)
+
+// CPE vendor/product mappings for MySQL-family servers
+// CPE format: cpe:2.3:a:{vendor}:{product}:{version}:*:*:*:*:*:*:*
+var cpeTemplates = map[string]string{
+	"mysql":   "cpe:2.3:a:oracle:mysql:%s:*:*:*:*:*:*:*",
+	"mariadb": "cpe:2.3:a:mariadb:mariadb:%s:*:*:*:*:*:*:*",
+	"percona": "cpe:2.3:a:percona:percona_server:%s:*:*:*:*:*:*:*",
+	"aurora":  "cpe:2.3:a:amazon:aurora:%s:*:*:*:*:*:*:*",
+}
+
 func init() {
 	plugins.RegisterPlugin(&MYSQLPlugin{})
 }
@@ -83,10 +111,17 @@ func (p *MYSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 
 	mysqlVersionStr, err := CheckInitialHandshakePacket(response)
 	if err == nil {
+		// Extract server type and version from version string
+		serverType, version := parseVersionString(mysqlVersionStr)
+
+		// Generate CPE for vulnerability tracking
+		cpe := buildMySQLCPE(serverType, version)
+
 		payload := plugins.ServiceMySQL{
 			PacketType:   "handshake",
 			ErrorMessage: "",
 			ErrorCode:    0,
+			CPEs:         []string{cpe},
 		}
 		return plugins.CreateServiceFrom(target, payload, false, mysqlVersionStr, plugins.TCP), nil
 	}
@@ -243,6 +278,99 @@ func CheckInitialHandshakePacket(response []byte) (string, error) {
 	}
 
 	return mysqlVersionStr, nil
+}
+
+// parseVersionString extracts server type and version from MySQL version string.
+//
+// Detects MySQL-family servers in priority order:
+//   1. Aurora MySQL (mysql_aurora keyword)
+//   2. MariaDB (MariaDB keyword, strips legacy 5.5.5- prefix)
+//   3. Percona Server (Percona keyword)
+//   4. MySQL (Oracle) - default for valid version numbers
+//   5. Unknown - fallback for invalid/missing version strings
+//
+// Parameters:
+//   - versionStr: Version string from MySQL handshake packet
+//
+// Returns:
+//   - serverType: One of "mysql", "mariadb", "percona", "aurora", "unknown"
+//   - version: Extracted version string, or empty if not found
+func parseVersionString(versionStr string) (string, string) {
+	// Priority 1: Aurora MySQL (most specific marker)
+	if strings.Contains(versionStr, "mysql_aurora") {
+		if matches := auroraRegex.FindStringSubmatch(versionStr); len(matches) >= 3 {
+			auroraVersion := matches[2] // Extract Aurora version (e.g., "3.11.0")
+			return "aurora", auroraVersion
+		}
+	}
+
+	// Priority 2: MariaDB (check for "MariaDB" keyword)
+	if strings.Contains(versionStr, "MariaDB") {
+		// Strip legacy 5.5.5- prefix (RPL_VERSION_HACK in older MariaDB versions)
+		cleanStr := strings.Replace(versionStr, "5.5.5-", "", 1)
+		if matches := mariadbRegex.FindStringSubmatch(cleanStr); len(matches) >= 4 {
+			version := fmt.Sprintf("%s.%s.%s", matches[1], matches[2], matches[3])
+			return "mariadb", version
+		}
+	}
+
+	// Priority 3: Percona Server (check for "Percona" keyword)
+	if strings.Contains(versionStr, "Percona") {
+		if matches := perconaRegex.FindStringSubmatch(versionStr); len(matches) >= 2 {
+			version := matches[1]
+			return "percona", version
+		}
+	}
+
+	// Priority 4: MySQL (Oracle) - default for valid version numbers
+	if matches := mysqlRegex.FindStringSubmatch(versionStr); len(matches) >= 4 {
+		version := fmt.Sprintf("%s.%s.%s", matches[1], matches[2], matches[3])
+		return "mysql", version
+	}
+
+	// Priority 5: Unknown (fallback for invalid/missing version strings)
+	return "unknown", ""
+}
+
+// buildMySQLCPE generates a CPE (Common Platform Enumeration) string for MySQL-family servers.
+//
+// Uses wildcard version ("*") when version is unknown to match Wappalyzer/RMI/FTP plugin
+// behavior and enable asset inventory use cases even without precise version information.
+//
+// CPE format: cpe:2.3:a:{vendor}:{product}:{version}:*:*:*:*:*:*:*
+//
+// Vendor/product mappings:
+//   - mysql   → cpe:2.3:a:oracle:mysql
+//   - mariadb → cpe:2.3:a:mariadb:mariadb
+//   - percona → cpe:2.3:a:percona:percona_server
+//   - aurora  → cpe:2.3:a:amazon:aurora
+//
+// Parameters:
+//   - serverType: Server type ("mysql", "mariadb", "percona", "aurora", "unknown", or empty)
+//   - version: Version string (e.g., "8.0.28"), or empty for unknown
+//
+// Returns:
+//   - string: CPE string with version or "*" wildcard
+func buildMySQLCPE(serverType, version string) string {
+	// Default to MySQL CPE for unknown/empty server types (MySQL-compatible assumption)
+	if serverType == "" || serverType == "unknown" {
+		serverType = "mysql"
+	}
+
+	// Use wildcard for unknown versions (matches FTP/RMI/Wappalyzer pattern)
+	if version == "" {
+		version = "*"
+	}
+
+	// Look up CPE template for this server type
+	cpeTemplate, exists := cpeTemplates[serverType]
+	if !exists {
+		// Fallback to MySQL if server type not recognized
+		cpeTemplate = cpeTemplates["mysql"]
+	}
+
+	// Format CPE with version
+	return fmt.Sprintf(cpeTemplate, version)
 }
 
 // readNullTerminatedASCIIString is responsible for reading a null terminated

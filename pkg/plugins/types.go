@@ -341,9 +341,10 @@ type ServiceSMB struct {
 func (e ServiceSMB) Type() string { return ProtoSMB }
 
 type ServiceMySQL struct {
-	PacketType   string `json:"packetType"` // the type of packet returned by the server (i.e. handshake or error)
-	ErrorMessage string `json:"errorMsg"`   // error message if the server returns an error packet
-	ErrorCode    int    `json:"errorCode"`  // error code returned if the server returns an error packet
+	PacketType   string   `json:"packetType"`       // the type of packet returned by the server (i.e. handshake or error)
+	ErrorMessage string   `json:"errorMsg"`         // error message if the server returns an error packet
+	ErrorCode    int      `json:"errorCode"`        // error code returned if the server returns an error packet
+	CPEs         []string `json:"cpes,omitempty"`   // Common Platform Enumeration identifiers for vulnerability tracking
 }
 
 func (e ServiceMySQL) Type() string { return ProtoMySQL }
@@ -351,7 +352,8 @@ func (e ServiceMySQL) Type() string { return ProtoMySQL }
 func (e ServicePostgreSQL) Type() string { return ProtoPostgreSQL }
 
 type ServicePostgreSQL struct {
-	AuthRequired bool `json:"authRequired"`
+	AuthRequired bool     `json:"authRequired"`
+	CPEs         []string `json:"cpes,omitempty"`
 }
 
 type ServicePOP3 struct {
@@ -406,6 +408,7 @@ type ServiceIPSEC struct {
 func (e ServiceIPSEC) Type() string { return ProtoIPSEC }
 
 type ServiceMSSQL struct {
+	CPEs []string `json:"cpes,omitempty"` // Common Platform Enumeration identifiers for vulnerability tracking
 }
 
 func (e ServiceMSSQL) Type() string { return ProtoMSSQL }
@@ -421,7 +424,8 @@ type ServiceTelnet struct {
 func (e ServiceTelnet) Type() string { return ProtoTelnet }
 
 type ServiceRedis struct {
-	AuthRequired bool `json:"authRequired:"`
+	AuthRequired bool     `json:"authRequired:"`
+	CPEs         []string `json:"cpes,omitempty"`
 }
 
 func (e ServiceRedis) Type() string { return ProtoRedis }
