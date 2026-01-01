@@ -43,8 +43,9 @@ const (
 	ProtoCouchDB    = "couchdb"
 	ProtoEcho          = "echo"
 	ProtoElasticsearch = "elasticsearch"
+	ProtoFirebird      = "firebird"
 	ProtoFTP           = "ftp"
-	ProtoHTTP       = "http"
+	ProtoHTTP          = "http"
 	ProtoHTTPS      = "https"
 	ProtoHTTP2      = "http2"
 	ProtoIMAP       = "imap"
@@ -612,6 +613,13 @@ func (e ServiceCassandra) Type() string { return ProtoCassandra }
 type ServiceEcho struct{}
 
 func (e ServiceEcho) Type() string { return ProtoEcho }
+
+type ServiceFirebird struct {
+	ProtocolVersion int32    `json:"protocol_version,omitempty"`
+	CPEs            []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceFirebird) Type() string { return ProtoFirebird }
 
 type ServiceIPMI struct{}
 
