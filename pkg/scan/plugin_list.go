@@ -45,6 +45,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/postgresql"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/rdp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/redis"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/javarmi"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/rsync"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/rtsp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/smb"

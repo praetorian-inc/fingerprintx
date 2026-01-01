@@ -67,6 +67,7 @@ const (
 	ProtoRPC        = "rpc"
 	ProtoRedis      = "redis"
 	ProtoRedisTLS   = "redis"
+	ProtoRMI        = "java-rmi"
 	ProtoRsync      = "rsync"
 	ProtoRtsp       = "rtsp"
 	ProtoSMB        = "smb"
@@ -190,6 +191,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoIMAP:
 		var p ServiceIMAP
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoRMI:
+		var p ServiceRMI
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRsync:
@@ -534,3 +539,10 @@ type ServiceJDWP struct {
 }
 
 func (e ServiceJDWP) Type() string { return ProtoJDWP }
+
+type ServiceRMI struct {
+	Endpoint string   `json:"endpoint,omitempty"`
+	CPEs     []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceRMI) Type() string { return ProtoRMI }
