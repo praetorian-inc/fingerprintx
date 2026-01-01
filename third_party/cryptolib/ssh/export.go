@@ -4,10 +4,12 @@ import (
 	"io"
 )
 
+// NewTransport creates a new SSH transport layer.
 func NewTransport(rwc io.ReadWriteCloser, rand io.Reader, isClient bool) *transport {
 	return newTransport(rwc, rand, isClient)
 }
 
+// SupportedHostKeyAlgos lists all host key algorithms supported by this library.
 var SupportedHostKeyAlgos = []string{
 	CertAlgoRSASHA512v01, CertAlgoRSASHA256v01,
 	CertAlgoRSAv01, CertAlgoDSAv01, CertAlgoECDSA256v01,
@@ -20,33 +22,39 @@ var SupportedHostKeyAlgos = []string{
 	KeyAlgoED25519,
 }
 
-type Algorithms struct {
+// NegotiatedAlgos wraps the negotiated algorithms result for external use.
+// Maps to the internal NegotiatedAlgorithms type.
+type NegotiatedAlgos struct {
 	Kex     string
 	HostKey string
-	w       directionAlgorithms
-	r       directionAlgorithms
+	w       DirectionAlgorithms
+	r       DirectionAlgorithms
 }
 
+// HandshakeTransport wraps the internal handshake transport for external use.
 type HandshakeTransport struct {
 	handshakeTransport
 	HandshakeTransport *handshakeTransport
 	Config             *Config
 	SessionID          []byte
-	Algorithms         *Algorithms
+	Algorithms         *NegotiatedAlgos
 	ServerVersion      []byte
 	ClientVersion      []byte
 }
 
-func NewHandshakeTransport(onn keyingTransport, config *Config, clientVersion, serverVersion []byte) *HandshakeTransport {
-	HandshakeTransportRet := newHandshakeTransport(onn, config, clientVersion, serverVersion)
-	return &HandshakeTransport{HandshakeTransport: HandshakeTransportRet,
-		Config:        HandshakeTransportRet.config,
-		SessionID:     HandshakeTransportRet.sessionID,
-		ServerVersion: HandshakeTransportRet.serverVersion,
-		ClientVersion: HandshakeTransportRet.clientVersion,
+// NewHandshakeTransport creates a new handshake transport layer.
+func NewHandshakeTransport(conn keyingTransport, config *Config, clientVersion, serverVersion []byte) *HandshakeTransport {
+	ht := newHandshakeTransport(conn, config, clientVersion, serverVersion)
+	return &HandshakeTransport{
+		HandshakeTransport: ht,
+		Config:             ht.config,
+		SessionID:          ht.sessionID,
+		ServerVersion:      ht.serverVersion,
+		ClientVersion:      ht.clientVersion,
 	}
 }
 
+// KexInitMsg represents a key exchange initialization message.
 type KexInitMsg struct {
 	Cookie                  [16]byte `sshtype:"20"`
 	KexAlgos                []string
@@ -62,17 +70,21 @@ type KexInitMsg struct {
 	FirstKexFollows         bool
 	Reserved                uint32
 }
+
+// HandshakeMagics contains the magic bytes exchanged during handshake.
 type HandshakeMagics struct {
 	ClientVersion, ServerVersion []byte
 	ClientKexInit, ServerKexInit []byte
 }
 
+// PushPacket pushes a packet to the handshake transport.
 func PushPacket(t *handshakeTransport, p []byte) error {
 	return t.pushPacket(p)
 }
 
-func FindAgreedAlgorithms(isClient bool, clientKexInit, serverKexInit *KexInitMsg) (algs *Algorithms, err error) {
-	ClientKexInit := kexInitMsg{
+// FindAgreedAlgorithms finds mutually supported algorithms between client and server.
+func FindAgreedAlgorithms(isClient bool, clientKexInit, serverKexInit *KexInitMsg) (algs *NegotiatedAlgos, err error) {
+	clientInit := kexInitMsg{
 		Cookie:                  clientKexInit.Cookie,
 		KexAlgos:                clientKexInit.KexAlgos,
 		ServerHostKeyAlgos:      clientKexInit.ServerHostKeyAlgos,
@@ -87,7 +99,7 @@ func FindAgreedAlgorithms(isClient bool, clientKexInit, serverKexInit *KexInitMs
 		FirstKexFollows:         clientKexInit.FirstKexFollows,
 		Reserved:                clientKexInit.Reserved,
 	}
-	ServerKexInit := kexInitMsg{
+	serverInit := kexInitMsg{
 		Cookie:                  serverKexInit.Cookie,
 		KexAlgos:                serverKexInit.KexAlgos,
 		ServerHostKeyAlgos:      serverKexInit.ServerHostKeyAlgos,
@@ -102,30 +114,43 @@ func FindAgreedAlgorithms(isClient bool, clientKexInit, serverKexInit *KexInitMs
 		FirstKexFollows:         serverKexInit.FirstKexFollows,
 		Reserved:                serverKexInit.Reserved,
 	}
-	algorithm, err := findAgreedAlgorithms(isClient, &ClientKexInit, &ServerKexInit)
+
+	negotiated, err := findAgreedAlgorithms(isClient, &clientInit, &serverInit)
 	if err != nil {
 		return nil, err
 	}
-	algorithmRet := Algorithms{Kex: algorithm.kex, HostKey: algorithm.hostKey, w: algorithm.w, r: algorithm.r}
-	return &algorithmRet, err
+
+	// Map NegotiatedAlgorithms to our NegotiatedAlgos type
+	result := NegotiatedAlgos{
+		Kex:     negotiated.KeyExchange,
+		HostKey: negotiated.HostKey,
+		w:       negotiated.Write,
+		r:       negotiated.Read,
+	}
+	return &result, nil
 }
 
+// KexAlgorithm is an interface for key exchange algorithms.
 type KexAlgorithm interface {
 	kexAlgorithm
 }
 
+// GetKex returns the key exchange algorithm for the given name.
 func GetKex(kex string) KexAlgorithm {
-	kexStr := kexAlgoMap[kex]
-	return kexStr
+	return kexAlgoMap[kex]
 }
 
+// Clients performs the client side of key exchange.
 func Clients(t *HandshakeTransport, kex KexAlgorithm, magics *HandshakeMagics) (*kexResult, error) {
-	magic := handshakeMagics{clientVersion: magics.ClientVersion, clientKexInit: magics.ClientKexInit,
-		serverVersion: magics.ServerVersion, serverKexInit: magics.ServerKexInit}
+	magic := handshakeMagics{
+		clientVersion: magics.ClientVersion,
+		clientKexInit: magics.ClientKexInit,
+		serverVersion: magics.ServerVersion,
+		serverKexInit: magics.ServerKexInit,
+	}
 	result, err := kex.Client(t.HandshakeTransport.conn, t.Config.Rand, &magic)
 	if err != nil {
 		return nil, err
 	}
-
 	return result, nil
 }
