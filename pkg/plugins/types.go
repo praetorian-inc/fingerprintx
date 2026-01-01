@@ -121,6 +121,10 @@ func (e Service) Metadata() Metadata {
 		var p ServiceCassandra
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoFirebird:
+		var p ServiceFirebird
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoFTP:
 		var p ServiceFTP
 		_ = json.Unmarshal(e.Raw, &p)
