@@ -38,8 +38,11 @@ const TypeService string = "service"
 const (
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
-	ProtoEcho       = "echo"
-	ProtoFTP        = "ftp"
+	ProtoCassandra  = "cassandra"
+	ProtoCouchDB    = "couchdb"
+	ProtoEcho          = "echo"
+	ProtoElasticsearch = "elasticsearch"
+	ProtoFTP           = "ftp"
 	ProtoHTTP       = "http"
 	ProtoHTTPS      = "https"
 	ProtoHTTP2      = "http2"
@@ -97,6 +100,18 @@ func (e Service) Type() string { return TypeService }
 
 func (e Service) Metadata() Metadata {
 	switch e.Protocol {
+	case ProtoElasticsearch:
+		var p ServiceElasticsearch
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoCouchDB:
+		var p ServiceCouchDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoCassandra:
+		var p ServiceCassandra
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoFTP:
 		var p ServiceFTP
 		_ = json.Unmarshal(e.Raw, &p)
@@ -430,6 +445,12 @@ type ServiceRedis struct {
 
 func (e ServiceRedis) Type() string { return ProtoRedis }
 
+type ServiceElasticsearch struct {
+	CPEs []string `json:"cpes,omitempty"` // Common Platform Enumeration identifiers for vulnerability tracking
+}
+
+func (e ServiceElasticsearch) Type() string { return ProtoElasticsearch }
+
 type ServiceFTP struct {
 	Banner     string   `json:"banner"`
 	Confidence string   `json:"confidence,omitempty"` // Detection confidence: "high", "medium", or "low"
@@ -523,6 +544,23 @@ type ServiceDHCP struct {
 }
 
 func (e ServiceDHCP) Type() string { return ProtoDHCP }
+
+type ServiceCouchDB struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceCouchDB) Type() string { return ProtoCouchDB }
+
+type ServiceCassandra struct {
+	Product          string   `json:"product,omitempty"`          // "Apache Cassandra", "ScyllaDB", "DataStax Enterprise"
+	CQLVersion       string   `json:"cqlVersion,omitempty"`       // CQL version from SUPPORTED response (e.g., "3.4.5")
+	ProtocolVersions []string `json:"protocolVersions,omitempty"` // Native protocol versions (e.g., ["3/v3", "4/v4", "5/v5"])
+	Compression      []string `json:"compression,omitempty"`      // Compression algorithms (e.g., ["lz4", "snappy", "zstd"])
+	Confidence       string   `json:"confidence,omitempty"`       // Version detection confidence ("high", "medium", "low")
+	CPEs             []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceCassandra) Type() string { return ProtoCassandra }
 
 type ServiceEcho struct{}
 
