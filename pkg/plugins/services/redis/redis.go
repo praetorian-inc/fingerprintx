@@ -16,7 +16,9 @@ package redis
 
 import (
 	"bytes"
+	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
@@ -70,6 +72,58 @@ func checkRedis(data []byte) (Info, error) {
 	return Info{AuthRequired: true}, nil
 }
 
+// extractRedisVersion extracts the Redis version from an INFO SERVER response.
+// The INFO command returns a bulk string in RESP format containing key-value pairs.
+// Each line is in the format "key:value\r\n" and we look for the "redis_version" field.
+//
+// Parameters:
+//   - response: The INFO SERVER response string containing server metadata
+//
+// Returns:
+//   - string: The Redis version (e.g., "7.4.0"), or empty string if not found
+func extractRedisVersion(response string) string {
+	if response == "" {
+		return ""
+	}
+
+	// Split response by newlines (either \r\n or \n)
+	lines := strings.Split(strings.ReplaceAll(response, "\r\n", "\n"), "\n")
+
+	// Look for redis_version field
+	for _, line := range lines {
+		if strings.HasPrefix(line, "redis_version:") {
+			// Extract version after the colon
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				return strings.TrimSpace(parts[1])
+			}
+		}
+	}
+
+	return ""
+}
+
+// buildRedisCPE generates a CPE (Common Platform Enumeration) string for Redis servers.
+// CPE format: cpe:2.3:a:redis:redis:{version}:*:*:*:*:*:*:*
+//
+// When version is unknown, uses "*" wildcard to match Wappalyzer/RMI/FTP plugin behavior
+// and enable asset inventory use cases even without precise version information.
+//
+// Parameters:
+//   - version: Redis version string (e.g., "7.4.0"), or empty for unknown
+//
+// Returns:
+//   - string: CPE string with version or "*" wildcard
+func buildRedisCPE(version string) string {
+	// Use wildcard for unknown versions (matches FTP/RMI/Wappalyzer pattern)
+	if version == "" {
+		version = "*"
+	}
+
+	// Redis CPE template: cpe:2.3:a:redis:redis:{version}:*:*:*:*:*:*:*
+	return fmt.Sprintf("cpe:2.3:a:redis:redis:%s:*:*:*:*:*:*:*", version)
+}
+
 func init() {
 	plugins.RegisterPlugin(&REDISPlugin{})
 	plugins.RegisterPlugin(&REDISTLSPlugin{})
@@ -120,13 +174,54 @@ func DetectRedis(conn net.Conn, target plugins.Target, timeout time.Duration, tl
 	if err != nil {
 		return nil, nil
 	}
+
+	// Phase 2: Enrichment - Try to extract version via INFO SERVER
+	// This may fail if authentication is required, but detection still succeeds
+	version := ""
+	if !result.AuthRequired {
+		// INFO SERVER command in RESP format
+		// [*2(CR)(NL)$4(CR)(NL)INFO(CR)(NL)$6(CR)(NL)SERVER(CR)(NL)]
+		infoCmd := []byte{
+			0x2a, 0x32, 0x0d, 0x0a, // *2\r\n
+			0x24, 0x34, 0x0d, 0x0a, // $4\r\n
+			0x49, 0x4e, 0x46, 0x4f, 0x0d, 0x0a, // INFO\r\n
+			0x24, 0x36, 0x0d, 0x0a, // $6\r\n
+			0x53, 0x45, 0x52, 0x56, 0x45, 0x52, 0x0d, 0x0a, // SERVER\r\n
+		}
+
+		// Try to get INFO response (may fail gracefully)
+		infoResp, err := utils.SendRecv(conn, infoCmd, timeout)
+		if err == nil && len(infoResp) > 0 {
+			// Parse RESP bulk string format: $<length>\r\n<data>\r\n
+			// Extract the data portion and parse version
+			if len(infoResp) > 2 && infoResp[0] == '$' {
+				// Find the first \r\n (end of length prefix)
+				for i := 1; i < len(infoResp)-1; i++ {
+					if infoResp[i] == '\r' && infoResp[i+1] == '\n' {
+						// Data starts after \r\n
+						dataStart := i + 2
+						if dataStart < len(infoResp) {
+							infoData := string(infoResp[dataStart:])
+							version = extractRedisVersion(infoData)
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Generate CPE (uses "*" for unknown version)
+	cpe := buildRedisCPE(version)
+
 	payload := plugins.ServiceRedis{
 		AuthRequired: result.AuthRequired,
+		CPEs:         []string{cpe},
 	}
 	if tls {
-		return plugins.CreateServiceFrom(target, payload, true, "", plugins.TCPTLS), nil
+		return plugins.CreateServiceFrom(target, payload, true, version, plugins.TCPTLS), nil
 	}
-	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
+	return plugins.CreateServiceFrom(target, payload, false, version, plugins.TCP), nil
 }
 
 func (p *REDISPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
