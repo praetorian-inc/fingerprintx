@@ -19,6 +19,7 @@ package scan
 
 import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/cassandra"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/chromadb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/couchdb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/db2"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dhcp"
@@ -38,6 +39,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ldap"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/linuxrpc"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/memcached"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/milvus"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/modbus"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mongodb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/mqtt/mqtt3"
@@ -48,6 +50,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ntp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/openvpn"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/oracledb"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/pinecone"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/pop3"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/postgresql"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/rdp"

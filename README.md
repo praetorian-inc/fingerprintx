@@ -41,34 +41,42 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 
 ## Supported Protocols:
 
+**48 service detection plugins** supporting TCP and UDP protocols:
+
 <div align="center">
 
-|SERVICE   |TRANSPORT|SERVICE|TRANSPORT|
-| ---------| --------| ---------| --------|
-|HTTP      |TCP      |REDIS     |TCP      |
-|SSH       |TCP      |MQTT3     |TCP      |
-|MODBUS    |TCP      |VNC       |TCP      |
-|TELNET    |TCP      |MQTT5     |TCP      |
-|FTP       |TCP      |RSYNC     |TCP      |
-|SMB       |TCP      |RPC       |TCP      |
-|DNS       |TCP      |OracleDB  |TCP      |
-|SMTP      |TCP      |RTSP      |TCP      |
-|PostgreSQL|TCP      |MQTT5     |TCP (TLS)|
-|RDP       |TCP      |HTTPS     |TCP (TLS)|
-|POP3      |TCP      |SMTPS     |TCP (TLS)|
-|KAFKA     |TCP      |MQTT3     |TCP (TLS)|
-|MySQL     |TCP      |RDP       |TCP (TLS)|
-|MSSQL     |TCP      |POP3S     |TCP (TLS)|
-|LDAP      |TCP      |LDAPS     |TCP (TLS)|
-|IMAP      |TCP      |IMAPS     |TCP (TLS)|
-|SNMP      |UDP      |Kafka     |TCP (TLS)|
-|OPENVPN   |UDP      |NETBIOS-NS|UDP      |
-|IPSEC     |UDP      |DHCP      |UDP      |
-|STUN      |UDP      |NTP       |UDP      |
-|DNS       |UDP      |
+|SERVICE      |TRANSPORT|SERVICE       |TRANSPORT|SERVICE      |TRANSPORT|
+|-------------|---------|--------------|---------|-------------|---------|
+|Cassandra    |TCP      |InfluxDB      |TCP      |PostgreSQL   |TCP      |
+|ChromaDB     |TCP      |IPMI          |TCP      |RDP          |TCP      |
+|CouchDB      |TCP      |Java RMI      |TCP      |Redis        |TCP      |
+|DB2          |TCP      |JDWP          |TCP      |Rsync        |TCP      |
+|DNS          |TCP/UDP  |Kafka         |TCP      |RTSP         |TCP      |
+|Echo         |TCP      |LDAP          |TCP      |SMB          |TCP      |
+|Elasticsearch|TCP      |Linux RPC     |TCP      |SMTP         |TCP      |
+|Firebird     |TCP      |Memcached     |TCP      |SNPP         |TCP      |
+|FTP          |TCP      |Milvus        |TCP      |SSH          |TCP      |
+|HTTP/HTTPS   |TCP      |Modbus        |TCP      |Sybase       |TCP      |
+|IMAP         |TCP      |MongoDB       |TCP      |Telnet       |TCP      |
+|MQTT         |TCP      |MSSQL         |TCP      |VNC          |TCP      |
+|MySQL        |TCP      |OracleDB      |TCP      |             |         |
+|POP3         |TCP      |Pinecone      |TCP      |             |         |
+|DHCP         |UDP      |IPSEC         |UDP      |SNMP         |UDP      |
+|NetBIOS-NS   |UDP      |NTP           |UDP      |STUN         |UDP      |
+|OpenVPN      |UDP      |             |         |             |         |
 
 
 </div>
+
+### Notable Features:
+- **Vector Databases**: ChromaDB, Milvus, Pinecone
+- **Relational Databases**: PostgreSQL, MySQL, MSSQL, OracleDB, DB2, Sybase, Firebird
+- **NoSQL Databases**: MongoDB, CouchDB, Cassandra, Redis, Elasticsearch, InfluxDB
+- **Developer Tools**: JDWP (Java Debug Wire Protocol), Java RMI
+- **Industrial Protocols**: Modbus, IPMI
+- **Messaging**: Kafka, MQTT, SMTP
+- **Remote Access**: SSH, RDP, Telnet, VNC
+- **File Transfer**: FTP, SMB, Rsync
 
 # Installation
 From Github
@@ -190,10 +198,10 @@ $ cat input.txt | fingerprintx --json
 # Acknowledgements
 `fingerprintx` is the work of a lot of people, including our great intern class of 2022. Here is a list of contributors so far:
 
-* [praetorian-sohamroy](https://github.com/praetorian-sohamroy)
+* [Soham Roy][praetorian-sohamroy](https://github.com/praetorian-sohamroy)
 * [jue-huang](https://github.com/jue-huang)
-* [henryjung64](https://github.com/henryjung64)
-* [qwetboy10](https://github.com/qwetboy10)
-* [jwhenry28](https://github.com/jwhenry28)
-* [noahtutt](https://github.com/noahtutt)
-* [nsportsman](https://github.com/nsportsman)
+* [Henry Jung64](https://github.com/henryjung64)
+* [Tristan Wiesepape][qwetboy10](https://github.com/qwetboy10)
+* [Joseph Henry][jwhenry28](https://github.com/jwhenry28)
+* [Noah Tutt][noahtutt](https://github.com/noahtutt)
+* [Nathan Sportsman][nsportsman](https://github.com/nsportsman)

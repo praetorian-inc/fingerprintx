@@ -40,6 +40,7 @@ const (
 	ProtoDHCP       = "dhcp"
 	ProtoDB2        = "db2"
 	ProtoCassandra  = "cassandra"
+	ProtoChromaDB   = "chromadb"
 	ProtoCouchDB    = "couchdb"
 	ProtoEcho          = "echo"
 	ProtoElasticsearch = "elasticsearch"
@@ -57,8 +58,10 @@ const (
 	ProtoKafka      = "kafka"
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
-	ProtoMemcached  = "memcached"
-	ProtoModbus     = "modbus"
+	ProtoMemcached     = "memcached"
+	ProtoMilvus        = "milvus"
+	ProtoMilvusMetrics = "milvus-metrics"
+	ProtoModbus        = "modbus"
 	ProtoMongoDB    = "mongodb"
 	ProtoMQTT       = "mqtt"
 	ProtoMSSQL      = "mssql"
@@ -67,6 +70,7 @@ const (
 	ProtoNTP        = "ntp"
 	ProtoOracle     = "oracle"
 	ProtoOpenVPN    = "openvpn"
+	ProtoPinecone   = "pinecone"
 	ProtoPOP3       = "pop3"
 	ProtoPOP3S      = "pop3s"
 	ProtoPostgreSQL = "postgresql"
@@ -119,6 +123,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoCassandra:
 		var p ServiceCassandra
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoChromaDB:
+		var p ServiceChromaDB
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoFirebird:
@@ -183,6 +191,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoOracle:
 		var p ServiceOracle
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoPinecone:
+		var p ServicePinecone
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoMySQL:
@@ -251,6 +263,14 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoMemcached:
 		var p ServiceMemcached
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMilvus:
+		var p ServiceMilvus
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMilvusMetrics:
+		var p ServiceMilvusMetrics
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoPOP3:
@@ -546,6 +566,13 @@ type ServiceOracle struct {
 
 func (e ServiceOracle) Type() string { return ProtoOracle }
 
+type ServicePinecone struct {
+	CPEs       []string `json:"cpes,omitempty"`  // Common Platform Enumeration with wildcard version
+	APIVersion string   `json:"apiVersion,omitempty"` // Pinecone API version from x-pinecone-api-version header
+}
+
+func (e ServicePinecone) Type() string { return ProtoPinecone }
+
 type ServiceOpenVPN struct{}
 
 func (e ServiceOpenVPN) Type() string { return ProtoOpenVPN }
@@ -560,6 +587,18 @@ type ServiceMemcached struct {
 }
 
 func (e ServiceMemcached) Type() string { return ProtoMemcached }
+
+type ServiceMilvus struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceMilvus) Type() string { return ProtoMilvus }
+
+type ServiceMilvusMetrics struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceMilvusMetrics) Type() string { return ProtoMilvusMetrics }
 
 type ServiceModbus struct{}
 
@@ -613,6 +652,12 @@ type ServiceCassandra struct {
 }
 
 func (e ServiceCassandra) Type() string { return ProtoCassandra }
+
+type ServiceChromaDB struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceChromaDB) Type() string { return ProtoChromaDB }
 
 type ServiceEcho struct{}
 
