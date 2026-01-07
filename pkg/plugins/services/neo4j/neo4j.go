@@ -68,6 +68,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"syscall"
@@ -481,18 +482,34 @@ func recvExact(conn net.Conn, n int, timeout time.Duration) ([]byte, error) {
 			return []byte{}, &utils.ReadTimeoutError{WrappedError: err}
 		}
 		m, err := conn.Read(buf[read:])
+
+		// Process bytes FIRST (per io.Reader contract)
+		if m > 0 {
+			read += m
+		}
+
+		// THEN check error
 		if err != nil {
 			var netErr net.Error
 			if (errors.As(err, &netErr) && netErr.Timeout()) ||
 				errors.Is(err, syscall.ECONNREFUSED) {
 				return []byte{}, nil
 			}
+			// For io.EOF: if we got enough data, return it with no error
+			if errors.Is(err, io.EOF) && read >= n {
+				return buf[:read], nil
+			}
 			return buf[:read], err
 		}
+
 		if m == 0 {
+			break // EOF without error
+		}
+
+		// Check if we've read enough
+		if read >= n {
 			break
 		}
-		read += m
 	}
 	return buf[:read], nil
 }
