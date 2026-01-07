@@ -41,30 +41,61 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 
 ## Supported Protocols:
 
-**49 service detection plugins** supporting TCP and UDP protocols:
+**50 service detection plugins** supporting TCP and UDP protocols:
 
 <div align="center">
 
-|SERVICE      |TRANSPORT|SERVICE       |TRANSPORT|SERVICE      |TRANSPORT|
-|-------------|---------|--------------|---------|-------------|---------|
-|Cassandra    |TCP      |InfluxDB      |TCP      |PostgreSQL   |TCP      |
-|ChromaDB     |TCP      |IPMI          |TCP      |RDP          |TCP      |
-|CouchDB      |TCP      |Java RMI      |TCP      |Redis        |TCP      |
-|DB2          |TCP      |JDWP          |TCP      |Rsync        |TCP      |
-|DNS          |TCP/UDP  |Kafka         |TCP      |RTSP         |TCP      |
-|Echo         |TCP      |LDAP          |TCP      |SMB          |TCP      |
-|Elasticsearch|TCP      |Linux RPC     |TCP      |SMTP         |TCP      |
-|Firebird     |TCP      |Memcached     |TCP      |SNPP         |TCP      |
-|FTP          |TCP      |Milvus        |TCP      |SSH          |TCP      |
-|HTTP/HTTPS   |TCP      |Modbus        |TCP      |Sybase       |TCP      |
-|IMAP         |TCP      |MongoDB       |TCP      |Telnet       |TCP      |
-|MQTT         |TCP      |MSSQL         |TCP      |VNC          |TCP      |
-|MySQL        |TCP      |Neo4j         |TCP      |OracleDB     |TCP      |
-|POP3         |TCP      |Pinecone      |TCP      |             |         |
-|DHCP         |UDP      |IPSEC         |UDP      |SNMP         |UDP      |
-|NetBIOS-NS   |UDP      |NTP           |UDP      |STUN         |UDP      |
-|OpenVPN      |UDP      |             |         |             |         |
-
+|SERVICE       |TRANSPORT|
+|--------------|---------|
+|Cassandra     |TCP      |
+|ChromaDB      |TCP      |
+|CouchDB       |TCP      |
+|DB2           |TCP      |
+|DHCP          |UDP      |
+|Diameter      |TCP      |
+|DNS           |TCP/UDP  |
+|Echo          |TCP      |
+|Elasticsearch |TCP      |
+|Firebird      |TCP      |
+|FTP           |TCP      |
+|HTTP/HTTPS    |TCP      |
+|IMAP          |TCP      |
+|InfluxDB      |TCP      |
+|IPMI          |TCP      |
+|IPSEC         |UDP      |
+|Java RMI      |TCP      |
+|JDWP          |TCP      |
+|Kafka         |TCP      |
+|LDAP          |TCP      |
+|Linux RPC     |TCP      |
+|Memcached     |TCP      |
+|Milvus        |TCP      |
+|Modbus        |TCP      |
+|MongoDB       |TCP      |
+|MQTT          |TCP      |
+|MSSQL         |TCP      |
+|MySQL         |TCP      |
+|Neo4j         |TCP      |
+|NetBIOS-NS    |UDP      |
+|NTP           |UDP      |
+|OpenVPN       |UDP      |
+|OracleDB      |TCP      |
+|Pinecone      |TCP      |
+|POP3          |TCP      |
+|PostgreSQL    |TCP      |
+|RDP           |TCP      |
+|Redis         |TCP      |
+|Rsync         |TCP      |
+|RTSP          |TCP      |
+|SMB           |TCP      |
+|SMTP          |TCP      |
+|SNMP          |UDP      |
+|SNPP          |TCP      |
+|SSH           |TCP      |
+|STUN          |UDP      |
+|Sybase        |TCP      |
+|Telnet        |TCP      |
+|VNC           |TCP      |
 
 </div>
 
@@ -77,6 +108,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 - **Messaging**: Kafka, MQTT, SMTP
 - **Remote Access**: SSH, RDP, Telnet, VNC
 - **File Transfer**: FTP, SMB, Rsync
+- **Telecom/AAA**: Diameter (3GPP networks, LTE/5G)
 
 # Installation
 From Github
