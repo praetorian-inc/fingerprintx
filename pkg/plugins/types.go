@@ -57,6 +57,7 @@ const (
 	ProtoIPSEC      = "ipsec"
 	ProtoJDWP       = "jdwp"
 	ProtoKafka      = "kafka"
+	ProtoKubernetes = "kubernetes"
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
 	ProtoMemcached     = "memcached"
@@ -193,6 +194,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoKafka:
 		var p ServiceKafka
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoKubernetes:
+		var p ServiceKubernetes
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoOracle:
@@ -569,6 +574,19 @@ func (e ServiceLDAPS) Type() string { return ProtoLDAPS }
 type ServiceKafka struct{}
 
 func (e ServiceKafka) Type() string { return ProtoKafka }
+
+type ServiceKubernetes struct {
+	CPEs         []string `json:"cpes,omitempty"`
+	GitVersion   string   `json:"gitVersion,omitempty"`
+	GitCommit    string   `json:"gitCommit,omitempty"`
+	BuildDate    string   `json:"buildDate,omitempty"`
+	GoVersion    string   `json:"goVersion,omitempty"`
+	Platform     string   `json:"platform,omitempty"`
+	Distribution string   `json:"distribution,omitempty"` // k3s, gke, eks, aks, openshift, minikube, vanilla
+	Vendor       string   `json:"vendor,omitempty"`       // kubernetes, rancher, google, aws, azure, redhat
+}
+
+func (e ServiceKubernetes) Type() string { return ProtoKubernetes }
 
 type ServiceOracle struct {
 	Info string `json:"info"`
