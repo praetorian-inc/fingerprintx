@@ -15,7 +15,9 @@
 package postgres
 
 import (
+	"bytes"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"time"
 
@@ -48,6 +50,70 @@ const ErrorResponse byte = 0x45
 const AuthReq byte = 0x52
 
 const NegotiateProtocolVersion = 0x76
+
+// parseParameterStatus parses a PostgreSQL ParameterStatus message ('S' type).
+//
+// ParameterStatus message format:
+//   Byte 0:       'S' (0x53) - Message type identifier
+//   Bytes 1-4:    Message length (Int32, big-endian, includes itself)
+//   Bytes 5+:     Parameter name (null-terminated C string)
+//   Following:    Parameter value (null-terminated C string)
+//
+// Parameters:
+//   - msg: The raw message bytes from the PostgreSQL server
+//
+// Returns:
+//   - name: Parameter name (e.g., "server_version")
+//   - value: Parameter value (e.g., "14.5")
+//   - error: Non-nil if message is invalid or malformed
+func parseParameterStatus(msg []byte) (string, string, error) {
+	// Validate minimum length: type(1) + length(4) + name(1+) + value(1+)
+	if len(msg) < 7 {
+		return "", "", &utils.InvalidResponseErrorInfo{
+			Service: POSTGRES,
+			Info:    "ParameterStatus message too short",
+		}
+	}
+
+	// Verify message type is 'S' (ParameterStatus)
+	if msg[0] != 0x53 {
+		return "", "", &utils.InvalidResponseErrorInfo{
+			Service: POSTGRES,
+			Info:    fmt.Sprintf("expected ParameterStatus type 'S' (0x53), got 0x%02x", msg[0]),
+		}
+	}
+
+	// Extract parameter name (null-terminated string starting at byte 5)
+	nameStart := 5
+	nameEnd := bytes.IndexByte(msg[nameStart:], 0)
+	if nameEnd == -1 {
+		return "", "", &utils.InvalidResponseErrorInfo{
+			Service: POSTGRES,
+			Info:    "parameter name missing null terminator",
+		}
+	}
+	name := string(msg[nameStart : nameStart+nameEnd])
+
+	// Extract parameter value (null-terminated string after name)
+	valueStart := nameStart + nameEnd + 1
+	if valueStart >= len(msg) {
+		return "", "", &utils.InvalidResponseErrorInfo{
+			Service: POSTGRES,
+			Info:    "message truncated before parameter value",
+		}
+	}
+
+	valueEnd := bytes.IndexByte(msg[valueStart:], 0)
+	if valueEnd == -1 {
+		return "", "", &utils.InvalidResponseErrorInfo{
+			Service: POSTGRES,
+			Info:    "parameter value missing null terminator",
+		}
+	}
+	value := string(msg[valueStart : valueStart+valueEnd])
+
+	return name, value, nil
+}
 
 func verifyPSQL(data []byte) bool {
 	msgLength := len(data)
@@ -97,6 +163,28 @@ func successfulAuth(data []byte) bool {
 	return msg == 0
 }
 
+// buildPostgreSQLCPE generates a CPE (Common Platform Enumeration) string for PostgreSQL.
+//
+// Uses wildcard version ("*") when version is unknown to match FTP/MySQL plugin
+// behavior and enable asset inventory use cases even without precise version information.
+//
+// CPE format: cpe:2.3:a:postgresql:postgresql:{version}:*:*:*:*:*:*:*
+//
+// Parameters:
+//   - version: Version string (e.g., "14.5", "16.1"), or empty for unknown
+//
+// Returns:
+//   - string: CPE string with version or "*" wildcard
+func buildPostgreSQLCPE(version string) string {
+	// Use wildcard for unknown versions (matches FTP/MySQL pattern)
+	if version == "" {
+		version = "*"
+	}
+
+	// Format CPE with version
+	return fmt.Sprintf("cpe:2.3:a:postgresql:postgresql:%s:*:*:*:*:*:*:*", version)
+}
+
 func init() {
 	plugins.RegisterPlugin(&POSTGRESPlugin{})
 }
@@ -128,8 +216,14 @@ func (p *POSTGRESPlugin) Run(conn net.Conn, timeout time.Duration, target plugin
 		return nil, nil
 	}
 
+	// Generate CPE for vulnerability tracking
+	// TODO: Extract version from ParameterStatus messages for more precise CPE
+	// Currently using wildcard version "*" to enable asset inventory
+	cpe := buildPostgreSQLCPE("")
+
 	payload := plugins.ServicePostgreSQL{
 		AuthRequired: !successfulAuth(response),
+		CPEs:         []string{cpe},
 	}
 	return plugins.CreateServiceFrom(target, payload, false, "", plugins.TCP), nil
 }

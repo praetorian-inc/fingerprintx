@@ -38,20 +38,30 @@ const TypeService string = "service"
 const (
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
-	ProtoEcho       = "echo"
-	ProtoFTP        = "ftp"
-	ProtoHTTP       = "http"
+	ProtoDB2        = "db2"
+	ProtoCassandra  = "cassandra"
+	ProtoChromaDB   = "chromadb"
+	ProtoCouchDB    = "couchdb"
+	ProtoEcho          = "echo"
+	ProtoElasticsearch = "elasticsearch"
+	ProtoFirebird      = "firebird"
+	ProtoFTP           = "ftp"
+	ProtoHTTP          = "http"
 	ProtoHTTPS      = "https"
 	ProtoHTTP2      = "http2"
 	ProtoIMAP       = "imap"
 	ProtoIMAPS      = "imaps"
+	ProtoInfluxDB   = "influxdb"
 	ProtoIPMI       = "ipmi"
 	ProtoIPSEC      = "ipsec"
 	ProtoJDWP       = "jdwp"
 	ProtoKafka      = "kafka"
 	ProtoLDAP       = "ldap"
 	ProtoLDAPS      = "ldaps"
-	ProtoModbus     = "modbus"
+	ProtoMemcached     = "memcached"
+	ProtoMilvus        = "milvus"
+	ProtoMilvusMetrics = "milvus-metrics"
+	ProtoModbus        = "modbus"
 	ProtoMongoDB    = "mongodb"
 	ProtoMQTT       = "mqtt"
 	ProtoMSSQL      = "mssql"
@@ -60,6 +70,7 @@ const (
 	ProtoNTP        = "ntp"
 	ProtoOracle     = "oracle"
 	ProtoOpenVPN    = "openvpn"
+	ProtoPinecone   = "pinecone"
 	ProtoPOP3       = "pop3"
 	ProtoPOP3S      = "pop3s"
 	ProtoPostgreSQL = "postgresql"
@@ -77,6 +88,7 @@ const (
 	ProtoSNPP       = "snpp"
 	ProtoSSH        = "ssh"
 	ProtoStun       = "stun"
+	ProtoSybase     = "sybase"
 	ProtoTelnet     = "telnet"
 	ProtoVNC        = "vnc"
 	ProtoUnknown    = "unknown"
@@ -97,6 +109,30 @@ func (e Service) Type() string { return TypeService }
 
 func (e Service) Metadata() Metadata {
 	switch e.Protocol {
+	case ProtoElasticsearch:
+		var p ServiceElasticsearch
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoCouchDB:
+		var p ServiceCouchDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoDB2:
+		var p ServiceDB2
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoCassandra:
+		var p ServiceCassandra
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoChromaDB:
+		var p ServiceChromaDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoFirebird:
+		var p ServiceFirebird
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoFTP:
 		var p ServiceFTP
 		_ = json.Unmarshal(e.Raw, &p)
@@ -157,6 +193,10 @@ func (e Service) Metadata() Metadata {
 		var p ServiceOracle
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoPinecone:
+		var p ServicePinecone
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoMySQL:
 		var p ServiceMySQL
 		_ = json.Unmarshal(e.Raw, &p)
@@ -189,6 +229,10 @@ func (e Service) Metadata() Metadata {
 		var p ServiceSSH
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoSybase:
+		var p ServiceSybase
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoIMAP:
 		var p ServiceIMAP
 		_ = json.Unmarshal(e.Raw, &p)
@@ -209,8 +253,24 @@ func (e Service) Metadata() Metadata {
 		var p ServiceIMAPS
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoInfluxDB:
+		var p ServiceInfluxDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoMQTT:
 		var p ServiceMQTT
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMemcached:
+		var p ServiceMemcached
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMilvus:
+		var p ServiceMilvus
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoMilvusMetrics:
+		var p ServiceMilvusMetrics
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoPOP3:
@@ -341,9 +401,10 @@ type ServiceSMB struct {
 func (e ServiceSMB) Type() string { return ProtoSMB }
 
 type ServiceMySQL struct {
-	PacketType   string `json:"packetType"` // the type of packet returned by the server (i.e. handshake or error)
-	ErrorMessage string `json:"errorMsg"`   // error message if the server returns an error packet
-	ErrorCode    int    `json:"errorCode"`  // error code returned if the server returns an error packet
+	PacketType   string   `json:"packetType"`       // the type of packet returned by the server (i.e. handshake or error)
+	ErrorMessage string   `json:"errorMsg"`         // error message if the server returns an error packet
+	ErrorCode    int      `json:"errorCode"`        // error code returned if the server returns an error packet
+	CPEs         []string `json:"cpes,omitempty"`   // Common Platform Enumeration identifiers for vulnerability tracking
 }
 
 func (e ServiceMySQL) Type() string { return ProtoMySQL }
@@ -351,7 +412,8 @@ func (e ServiceMySQL) Type() string { return ProtoMySQL }
 func (e ServicePostgreSQL) Type() string { return ProtoPostgreSQL }
 
 type ServicePostgreSQL struct {
-	AuthRequired bool `json:"authRequired"`
+	AuthRequired bool     `json:"authRequired"`
+	CPEs         []string `json:"cpes,omitempty"`
 }
 
 type ServicePOP3 struct {
@@ -398,6 +460,12 @@ type ServiceIMAPS struct {
 
 func (e ServiceIMAPS) Type() string { return ProtoIMAPS }
 
+type ServiceInfluxDB struct {
+	CPEs []string `json:"cpes,omitempty"` // Common Platform Enumeration identifiers for vulnerability tracking
+}
+
+func (e ServiceInfluxDB) Type() string { return ProtoInfluxDB }
+
 type ServiceIPSEC struct {
 	ResponderISP string `json:"responderISP"`
 	MessageID    string `json:"messageID"`
@@ -406,6 +474,7 @@ type ServiceIPSEC struct {
 func (e ServiceIPSEC) Type() string { return ProtoIPSEC }
 
 type ServiceMSSQL struct {
+	CPEs []string `json:"cpes,omitempty"` // Common Platform Enumeration identifiers for vulnerability tracking
 }
 
 func (e ServiceMSSQL) Type() string { return ProtoMSSQL }
@@ -421,10 +490,17 @@ type ServiceTelnet struct {
 func (e ServiceTelnet) Type() string { return ProtoTelnet }
 
 type ServiceRedis struct {
-	AuthRequired bool `json:"authRequired:"`
+	AuthRequired bool     `json:"authRequired:"`
+	CPEs         []string `json:"cpes,omitempty"`
 }
 
 func (e ServiceRedis) Type() string { return ProtoRedis }
+
+type ServiceElasticsearch struct {
+	CPEs []string `json:"cpes,omitempty"` // Common Platform Enumeration identifiers for vulnerability tracking
+}
+
+func (e ServiceElasticsearch) Type() string { return ProtoElasticsearch }
 
 type ServiceFTP struct {
 	Banner     string   `json:"banner"`
@@ -465,6 +541,13 @@ type ServiceSSH struct {
 
 func (e ServiceSSH) Type() string { return ProtoSSH }
 
+type ServiceSybase struct {
+	CPEs    []string `json:"cpes,omitempty"`
+	Version string   `json:"version,omitempty"`
+}
+
+func (e ServiceSybase) Type() string { return ProtoSybase }
+
 type ServiceLDAP struct{}
 
 func (e ServiceLDAP) Type() string { return ProtoLDAP }
@@ -483,6 +566,13 @@ type ServiceOracle struct {
 
 func (e ServiceOracle) Type() string { return ProtoOracle }
 
+type ServicePinecone struct {
+	CPEs       []string `json:"cpes,omitempty"`  // Common Platform Enumeration with wildcard version
+	APIVersion string   `json:"apiVersion,omitempty"` // Pinecone API version from x-pinecone-api-version header
+}
+
+func (e ServicePinecone) Type() string { return ProtoPinecone }
+
 type ServiceOpenVPN struct{}
 
 func (e ServiceOpenVPN) Type() string { return ProtoOpenVPN }
@@ -490,6 +580,25 @@ func (e ServiceOpenVPN) Type() string { return ProtoOpenVPN }
 type ServiceMQTT struct{}
 
 func (e ServiceMQTT) Type() string { return ProtoMQTT }
+
+type ServiceMemcached struct {
+	Version string   `json:"version,omitempty"`
+	CPEs    []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceMemcached) Type() string { return ProtoMemcached }
+
+type ServiceMilvus struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceMilvus) Type() string { return ProtoMilvus }
+
+type ServiceMilvusMetrics struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceMilvusMetrics) Type() string { return ProtoMilvusMetrics }
 
 type ServiceModbus struct{}
 
@@ -520,9 +629,46 @@ type ServiceDHCP struct {
 
 func (e ServiceDHCP) Type() string { return ProtoDHCP }
 
+type ServiceCouchDB struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceCouchDB) Type() string { return ProtoCouchDB }
+
+type ServiceDB2 struct {
+	ServerName string   `json:"serverName,omitempty"` // DB2 instance name
+	CPEs       []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceDB2) Type() string { return ProtoDB2 }
+
+type ServiceCassandra struct {
+	Product          string   `json:"product,omitempty"`          // "Apache Cassandra", "ScyllaDB", "DataStax Enterprise"
+	CQLVersion       string   `json:"cqlVersion,omitempty"`       // CQL version from SUPPORTED response (e.g., "3.4.5")
+	ProtocolVersions []string `json:"protocolVersions,omitempty"` // Native protocol versions (e.g., ["3/v3", "4/v4", "5/v5"])
+	Compression      []string `json:"compression,omitempty"`      // Compression algorithms (e.g., ["lz4", "snappy", "zstd"])
+	Confidence       string   `json:"confidence,omitempty"`       // Version detection confidence ("high", "medium", "low")
+	CPEs             []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceCassandra) Type() string { return ProtoCassandra }
+
+type ServiceChromaDB struct {
+	CPEs []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceChromaDB) Type() string { return ProtoChromaDB }
+
 type ServiceEcho struct{}
 
 func (e ServiceEcho) Type() string { return ProtoEcho }
+
+type ServiceFirebird struct {
+	ProtocolVersion int32    `json:"protocol_version,omitempty"`
+	CPEs            []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceFirebird) Type() string { return ProtoFirebird }
 
 type ServiceIPMI struct{}
 

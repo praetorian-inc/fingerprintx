@@ -1004,18 +1004,23 @@ func DetectMongoDB(conn net.Conn, timeout time.Duration) (mongoDBMetadata, bool,
 // buildMongoDBCPE constructs a CPE (Common Platform Enumeration) string for MongoDB.
 // CPE format: cpe:2.3:a:mongodb:mongodb:{version}:*:*:*:*:*:*:*
 //
+// When version is unknown, uses "*" for version field to match Wappalyzer/RMI/FTP
+// plugin behavior and enable asset inventory use cases.
+//
 // Parameters:
-//   - version: MongoDB version string (e.g., "8.0.4")
+//   - version: MongoDB version string (e.g., "8.0.4"), or empty for unknown
 //
 // Returns:
-//   - string: CPE string, or empty if version is empty
+//   - string: CPE string with version or "*" for unknown version
 func buildMongoDBCPE(version string) string {
+	// MongoDB product is always known when this is called, so always generate CPE
 	if version == "" {
-		return ""
+		version = "*" // Unknown version, but known product (matches RMI/FTP/Wappalyzer pattern)
+	} else {
+		// Sanitize version string to only include version number (remove any extra metadata)
+		// MongoDB versions are typically in format "X.Y.Z" or "X.Y.Z-rcN"
+		version = strings.Split(version, " ")[0] // Remove any trailing metadata
 	}
-	// Sanitize version string to only include version number (remove any extra metadata)
-	// MongoDB versions are typically in format "X.Y.Z" or "X.Y.Z-rcN"
-	version = strings.Split(version, " ")[0] // Remove any trailing metadata
 	return fmt.Sprintf("cpe:2.3:a:mongodb:mongodb:%s:*:*:*:*:*:*:*", version)
 }
 
@@ -1029,12 +1034,11 @@ func (p *MONGODBPlugin) Run(conn net.Conn, timeout time.Duration, target plugins
 			MinWireVersion: metadata.MinWireVersion,
 			ServerType:     metadata.ServerType,
 		}
-		if metadata.Version != "" {
-			cpe := buildMongoDBCPE(metadata.Version)
-			if cpe != "" {
-				payload.CPEs = []string{cpe}
-			}
-		}
+
+		// Always generate CPE - uses "*" for unknown version (matches FTP/RMI pattern)
+		cpe := buildMongoDBCPE(metadata.Version)
+		payload.CPEs = []string{cpe}
+
 		return plugins.CreateServiceFrom(target, payload, false, metadata.Version, plugins.TCP), nil
 	}
 	return nil, err

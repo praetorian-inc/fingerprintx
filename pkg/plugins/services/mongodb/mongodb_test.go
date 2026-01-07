@@ -600,3 +600,35 @@ func TestBuildMongoDBMsgQuery(t *testing.T) {
 		})
 	}
 }
+
+// TestBuildMongoDBCPE tests CPE generation from MongoDB version strings
+func TestBuildMongoDBCPE(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		wantCPE string
+	}{
+		// Valid CPE generation with version
+		{"MongoDB 8.0.4", "8.0.4", "cpe:2.3:a:mongodb:mongodb:8.0.4:*:*:*:*:*:*:*"},
+		{"MongoDB 7.0.15", "7.0.15", "cpe:2.3:a:mongodb:mongodb:7.0.15:*:*:*:*:*:*:*"},
+		{"MongoDB 6.0.3", "6.0.3", "cpe:2.3:a:mongodb:mongodb:6.0.3:*:*:*:*:*:*:*"},
+		{"MongoDB 5.0.0", "5.0.0", "cpe:2.3:a:mongodb:mongodb:5.0.0:*:*:*:*:*:*:*"},
+		{"MongoDB 4.4.29", "4.4.29", "cpe:2.3:a:mongodb:mongodb:4.4.29:*:*:*:*:*:*:*"},
+		{"MongoDB 4.2.24", "4.2.24", "cpe:2.3:a:mongodb:mongodb:4.2.24:*:*:*:*:*:*:*"},
+
+		// Version with metadata (should sanitize)
+		{"Version with metadata", "8.0.4 some extra info", "cpe:2.3:a:mongodb:mongodb:8.0.4:*:*:*:*:*:*:*"},
+
+		// CPE with wildcard version - unknown version but known product (matches FTP/RMI/Wappalyzer pattern)
+		{"No version - wildcard", "", "cpe:2.3:a:mongodb:mongodb:*:*:*:*:*:*:*:*"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cpe := buildMongoDBCPE(tt.version)
+			if cpe != tt.wantCPE {
+				t.Errorf("buildMongoDBCPE(%q) = %q, want %q", tt.version, cpe, tt.wantCPE)
+			}
+		})
+	}
+}

@@ -17,6 +17,7 @@ package mssql
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/praetorian-inc/fingerprintx/pkg/plugins"
@@ -57,6 +58,33 @@ func init() {
 
 func (p *MSSQLPlugin) PortPriority(port uint16) bool {
 	return port == 1433
+}
+
+// buildMSSQLCPE generates a CPE (Common Platform Enumeration) string for Microsoft SQL Server.
+//
+// Uses wildcard version ("*") when version is unknown to match Wappalyzer/RMI/FTP plugin
+// behavior and enable asset inventory use cases even without precise version information.
+//
+// CPE format: cpe:2.3:a:microsoft:sql_server:{version}:*:*:*:*:*:*:*
+//
+// Parameters:
+//   - version: Version string (e.g., "15.0.2000"), or empty for unknown
+//
+// Returns:
+//   - string: CPE string with version or "*" wildcard
+func buildMSSQLCPE(version string) string {
+	// Trim whitespace (version string may contain trailing newline)
+	version = strings.TrimSpace(version)
+
+	// Use wildcard for unknown versions (matches FTP/RMI/Wappalyzer pattern)
+	if version == "" {
+		version = "*"
+	}
+
+	// MSSQL CPE template
+	cpeTemplate := "cpe:2.3:a:microsoft:sql_server:%s:*:*:*:*:*:*:*"
+
+	return fmt.Sprintf(cpeTemplate, version)
 }
 
 func DetectMSSQL(conn net.Conn, timeout time.Duration) (Data, bool, error) {
@@ -314,7 +342,15 @@ func (p *MSSQLPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.T
 		return nil, err
 	}
 
-	return plugins.CreateServiceFrom(target, plugins.ServiceMSSQL{}, false, data.Version, plugins.TCP), nil
+	// Generate CPE for vulnerability tracking
+	cpe := buildMSSQLCPE(data.Version)
+
+	// Create service payload with CPE
+	payload := plugins.ServiceMSSQL{
+		CPEs: []string{cpe},
+	}
+
+	return plugins.CreateServiceFrom(target, payload, false, data.Version, plugins.TCP), nil
 }
 
 func (p *MSSQLPlugin) Name() string {
