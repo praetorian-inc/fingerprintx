@@ -41,7 +41,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 
 ## Supported Protocols:
 
-**48 service detection plugins** supporting TCP and UDP protocols:
+**49 service detection plugins** supporting TCP and UDP protocols:
 
 <div align="center">
 
@@ -59,7 +59,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 |HTTP/HTTPS   |TCP      |Modbus        |TCP      |Sybase       |TCP      |
 |IMAP         |TCP      |MongoDB       |TCP      |Telnet       |TCP      |
 |MQTT         |TCP      |MSSQL         |TCP      |VNC          |TCP      |
-|MySQL        |TCP      |OracleDB      |TCP      |             |         |
+|MySQL        |TCP      |Neo4j         |TCP      |OracleDB     |TCP      |
 |POP3         |TCP      |Pinecone      |TCP      |             |         |
 |DHCP         |UDP      |IPSEC         |UDP      |SNMP         |UDP      |
 |NetBIOS-NS   |UDP      |NTP           |UDP      |STUN         |UDP      |
@@ -71,7 +71,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 ### Notable Features:
 - **Vector Databases**: ChromaDB, Milvus, Pinecone
 - **Relational Databases**: PostgreSQL, MySQL, MSSQL, OracleDB, DB2, Sybase, Firebird
-- **NoSQL Databases**: MongoDB, CouchDB, Cassandra, Redis, Elasticsearch, InfluxDB
+- **NoSQL Databases**: MongoDB, CouchDB, Cassandra, Redis, Elasticsearch, InfluxDB, Neo4j
 - **Developer Tools**: JDWP (Java Debug Wire Protocol), Java RMI
 - **Industrial Protocols**: Modbus, IPMI
 - **Messaging**: Kafka, MQTT, SMTP
