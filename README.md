@@ -231,9 +231,9 @@ $ cat input.txt | fingerprintx --json
 `fingerprintx` is the work of a lot of people, including our great intern class of 2022. Here is a list of contributors so far:
 
 * [Soham Roy][praetorian-sohamroy](https://github.com/praetorian-sohamroy)
-* [jue-huang](https://github.com/jue-huang)
-* [Henry Jung64](https://github.com/henryjung64)
-* [Tristan Wiesepape][qwetboy10](https://github.com/qwetboy10)
-* [Joseph Henry][jwhenry28](https://github.com/jwhenry28)
-* [Noah Tutt][noahtutt](https://github.com/noahtutt)
-* [Nathan Sportsman][nsportsman](https://github.com/nsportsman)
+* [Jue Huang] (https://github.com/jue-huang)
+* [Henry Jung] (https://github.com/henryjung64)
+* [Tristan Wiesepape][qwetboy10] (https://github.com/qwetboy10)
+* [Joseph Henry][jwhenry28] (https://github.com/jwhenry28)
+* [Noah Tutt][noahtutt] (https://github.com/noahtutt)
+* [Nathan Sportsman][nsportsman] (https://github.com/nsportsman)
