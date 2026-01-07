@@ -23,6 +23,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/couchdb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/db2"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dhcp"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/diameter"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/dns"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/echo"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/elasticsearch"

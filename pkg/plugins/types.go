@@ -38,6 +38,7 @@ const TypeService string = "service"
 const (
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
+	ProtoDiameter   = "diameter"
 	ProtoDB2        = "db2"
 	ProtoCassandra  = "cassandra"
 	ProtoChromaDB   = "chromadb"
@@ -116,6 +117,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoCouchDB:
 		var p ServiceCouchDB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoDiameter:
+		var p ServiceDiameter
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoDB2:
@@ -645,6 +650,15 @@ type ServiceCouchDB struct {
 }
 
 func (e ServiceCouchDB) Type() string { return ProtoCouchDB }
+
+type ServiceDiameter struct {
+	CPEs    []string `json:"cpes,omitempty"`
+	Version string   `json:"version,omitempty"`
+	Vendor  string   `json:"vendor,omitempty"`
+	Product string   `json:"product,omitempty"`
+}
+
+func (e ServiceDiameter) Type() string { return ProtoDiameter }
 
 type ServiceDB2 struct {
 	ServerName string   `json:"serverName,omitempty"` // DB2 instance name
