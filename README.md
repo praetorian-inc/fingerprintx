@@ -41,7 +41,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 
 ## Supported Protocols:
 
-**50 service detection plugins** supporting TCP and UDP protocols:
+**51 service detection plugins** supporting TCP and UDP protocols:
 
 <div align="center">
 
@@ -88,6 +88,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 |Rsync         |TCP      |
 |RTSP          |TCP      |
 |SMB           |TCP      |
+|SMPP          |TCP      |
 |SMTP          |TCP      |
 |SNMP          |UDP      |
 |SNPP          |TCP      |
@@ -108,7 +109,7 @@ https://user-images.githubusercontent.com/69640071/193334167-8405dd50-f9bf-4386-
 - **Messaging**: Kafka, MQTT, SMTP
 - **Remote Access**: SSH, RDP, Telnet, VNC
 - **File Transfer**: FTP, SMB, Rsync
-- **Telecom/AAA**: Diameter (3GPP networks, LTE/5G)
+- **Telecom/AAA**: Diameter (3GPP networks, LTE/5G), SMPP (SMS gateways)
 
 # Installation
 From Github
