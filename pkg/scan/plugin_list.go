@@ -61,6 +61,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/rsync"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/rtsp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/smb"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/smpp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/smtp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/snmp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/snpp"

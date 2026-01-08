@@ -84,6 +84,7 @@ const (
 	ProtoRsync      = "rsync"
 	ProtoRtsp       = "rtsp"
 	ProtoSMB        = "smb"
+	ProtoSMPP       = "smpp"
 	ProtoSMTP       = "smtp"
 	ProtoSMTPS      = "smtps"
 	ProtoSNMP       = "snmp"
@@ -173,6 +174,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoSMB:
 		var p ServiceSMB
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoSMPP:
+		var p ServiceSMPP
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoRDP:
@@ -519,6 +524,16 @@ type ServiceFTP struct {
 }
 
 func (e ServiceFTP) Type() string { return ProtoFTP }
+
+type ServiceSMPP struct {
+	CPEs            []string `json:"cpes,omitempty"`            // Common Platform Enumeration identifiers for vulnerability tracking
+	ProtocolVersion string   `json:"protocolVersion,omitempty"` // SMPP protocol version (e.g., "3.4", "5.0")
+	SystemID        string   `json:"systemID,omitempty"`        // System ID from bind_transceiver_resp
+	Vendor          string   `json:"vendor,omitempty"`          // Vendor identified from system_id
+	Product         string   `json:"product,omitempty"`         // Product identified from system_id
+}
+
+func (e ServiceSMPP) Type() string { return ProtoSMPP }
 
 type ServiceSMTP struct {
 	Banner      string   `json:"banner"`
