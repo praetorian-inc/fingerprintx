@@ -70,24 +70,45 @@ func (p *KubernetesPlugin) Priority() int {
 }
 
 func (p *KubernetesPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Target) (*plugins.Service, error) {
-	// Create HTTP client that uses the provided connection and skips TLS verification
-	// (Kubernetes clusters often use self-signed certificates)
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
+	// Check if connection is already TLS-wrapped
+	// fingerprintx passes TLS connections for TCPTLS plugins
+	_, isTLS := conn.(*tls.Conn)
+
+	// Create HTTP client that uses the provided connection
+	// If connection is already TLS, don't wrap it again
+	var transport *http.Transport
+	var scheme string
+
+	if isTLS {
+		// Connection is already TLS, use http:// scheme to prevent double-wrapping
+		scheme = "http"
+		transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return conn, nil
+			},
+		}
+	} else {
+		// Connection is plain TCP, wrap with TLS
+		scheme = "https"
+		transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return conn, nil
 			},
-		},
+		}
+	}
+
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
 	}
 
 	// Phase 1: Detection - Query /version endpoint
 	// The /version endpoint is accessible without authentication by default
 	// via the system:public-info-viewer clusterrole
-	versionURL := fmt.Sprintf("https://%s/version", conn.RemoteAddr().String())
+	versionURL := fmt.Sprintf("%s://%s/version", scheme, conn.RemoteAddr().String())
 	req, err := http.NewRequest("GET", versionURL, nil)
 	if err != nil {
 		return nil, err
@@ -107,6 +128,15 @@ func (p *KubernetesPlugin) Run(conn net.Conn, timeout time.Duration, target plug
 		return nil, nil
 	}
 	defer resp.Body.Close()
+
+	// Check HTTP status code - only 200 OK indicates successful version endpoint access
+	// Non-200 status codes (401 Unauthorized, 403 Forbidden, 404 Not Found) indicate:
+	// - Anonymous access disabled (requires authentication)
+	// - system:public-info-viewer role not configured
+	// - Endpoint doesn't exist (not a Kubernetes API server)
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil
+	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
