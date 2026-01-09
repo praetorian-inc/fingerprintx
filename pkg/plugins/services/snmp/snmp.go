@@ -64,8 +64,24 @@ func (f *SNMPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 	stringBegin := idx + InfoOffset
 	if bytes.Contains(response, RequestID) {
 		if stringBegin < len(response) {
+			stringEnd := len(response)
+			if bytes.Contains(response, []byte("\r\n")) {
+				stringEnd = bytes.Index(response, []byte("\r\n"))
+			}
+			//处理\x06\x01\x02\x01\x01\x01\x00\x04\x82\x00\xa1VRP Comware Platform Software, Software Version 5.20, Release 5303\r\nQuidway S3528P-EA\r\nCopyright (c) 1998-2008 Huawei Techno情况
+			for i, c := range response[stringBegin:stringEnd] {
+				if c > 32 && c < 127 { // 判断字符是否可见
+					stringBegin = stringBegin + i
+					break
+				}
+			}
+			//处理Linux FRR-CORE 5.14.0-70.13.1.el9_0.x86_64 #1 SMP PREEMPT Tue May 17 15:53:11 EDT 2022 x86_64:161情况
+			serverInfo := string(response[stringBegin:stringEnd])
+			if strings.Contains(serverInfo, "#") {
+				serverInfo = strings.Split(serverInfo, "#")[0]
+			}
 			return plugins.CreateServiceFrom(target, plugins.ServiceSNMP{}, false,
-				string(response[stringBegin:]), plugins.UDP), nil
+				serverInfo, plugins.UDP), nil
 		}
 		return plugins.CreateServiceFrom(target, plugins.ServiceSNMP{}, false, "", plugins.UDP), nil
 	}

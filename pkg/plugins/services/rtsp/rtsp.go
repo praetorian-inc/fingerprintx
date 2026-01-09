@@ -83,28 +83,13 @@ func (p *RTSPPlugin) Run(conn net.Conn, timeout time.Duration, target plugins.Ta
 		return nil, nil
 	}
 	if string(response[:RtspMagicHeaderLength]) == RtspMagicHeader {
-		cseqStart := strings.Index(response, RtspCseqHeader)
-		if cseqStart == -1 {
-			return nil, nil
-		}
-
-		cseqValueStart := cseqStart + RtspCseqHeaderLength
-		if response[cseqValueStart:cseqValueStart+len(cseq)+RtspNewlineLength] != cseq+"\r\n" {
-			return nil, nil
-		}
-
+		var serverinfo string
 		serverStart := strings.Index(response, RtspServerHeader)
-		if serverStart == -1 {
-			return nil, nil
+		if serverStart != -1 {
+			serverValueStart := serverStart + RtspServerHeaderLength
+			serverValueEnd := strings.Index(response[serverValueStart:], "\r\n")
+			serverinfo = response[serverValueStart+2 : serverValueStart+serverValueEnd]
 		}
-
-		serverValueStart := serverStart + RtspServerHeaderLength
-		serverValueEnd := strings.Index(response[serverValueStart:], "\r\n")
-		if serverValueStart+serverValueEnd >= len(response) {
-			return nil, nil
-		}
-
-		serverinfo := response[serverValueStart : serverValueStart+serverValueEnd]
 		payload := plugins.ServiceRtsp{
 			ServerInfo: serverinfo,
 		}
