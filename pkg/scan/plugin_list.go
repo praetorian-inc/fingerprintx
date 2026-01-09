@@ -37,6 +37,7 @@ import (
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/jdwp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/kafka/kafkaNew"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/kafka/kafkaOld"
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/kubernetes"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/ldap"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/linuxrpc"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/memcached"
