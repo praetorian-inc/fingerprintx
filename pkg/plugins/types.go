@@ -31,6 +31,7 @@ const (
 	UDP
 	TCP
 	TCPTLS
+	SCTP
 )
 
 const TypeService string = "service"
@@ -77,6 +78,7 @@ const (
 	ProtoPOP3       = "pop3"
 	ProtoPOP3S      = "pop3s"
 	ProtoPostgreSQL = "postgresql"
+	ProtoPrometheus = "prometheus"
 	ProtoRDP        = "rdp"
 	ProtoRPC        = "rpc"
 	ProtoRedis      = "redis"
@@ -84,6 +86,7 @@ const (
 	ProtoRMI        = "java-rmi"
 	ProtoRsync      = "rsync"
 	ProtoRtsp       = "rtsp"
+	ProtoM3UA       = "m3ua"
 	ProtoSMB        = "smb"
 	ProtoSMPP       = "smpp"
 	ProtoSMTP       = "smtp"
@@ -213,6 +216,10 @@ func (e Service) Metadata() Metadata {
 		var p ServicePinecone
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
+	case ProtoPrometheus:
+		var p ServicePrometheus
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoMySQL:
 		var p ServiceMySQL
 		_ = json.Unmarshal(e.Raw, &p)
@@ -231,6 +238,10 @@ func (e Service) Metadata() Metadata {
 		return p
 	case ProtoModbus:
 		var p ServiceModbus
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
+	case ProtoM3UA:
+		var p ServiceM3UA
 		_ = json.Unmarshal(e.Raw, &p)
 		return p
 	case ProtoMongoDB:
@@ -616,6 +627,16 @@ type ServicePinecone struct {
 
 func (e ServicePinecone) Type() string { return ProtoPinecone }
 
+type ServicePrometheus struct {
+	CPEs      []string `json:"cpes,omitempty"`
+	Version   string   `json:"version,omitempty"`
+	Revision  string   `json:"revision,omitempty"`
+	BuildDate string   `json:"buildDate,omitempty"`
+	GoVersion string   `json:"goVersion,omitempty"`
+}
+
+func (e ServicePrometheus) Type() string { return ProtoPrometheus }
+
 type ServiceOpenVPN struct{}
 
 func (e ServiceOpenVPN) Type() string { return ProtoOpenVPN }
@@ -646,6 +667,15 @@ func (e ServiceMilvusMetrics) Type() string { return ProtoMilvusMetrics }
 type ServiceModbus struct{}
 
 func (e ServiceModbus) Type() string { return ProtoModbus }
+
+type ServiceM3UA struct {
+	CPEs             []string `json:"cpes,omitempty"`
+	MessageClass     string   `json:"messageClass,omitempty"`
+	MessageType      string   `json:"messageType,omitempty"`
+	MessageClassCode string   `json:"messageClassCode,omitempty"`
+}
+
+func (e ServiceM3UA) Type() string { return ProtoM3UA }
 
 type ServiceMongoDB struct {
 	MaxWireVersion int      `json:"maxWireVersion,omitempty"` // Wire protocol version (indicates capabilities, NOT precise version; e.g., wire 21 = MongoDB 7.0.x)
