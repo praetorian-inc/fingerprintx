@@ -36,6 +36,7 @@ const (
 const TypeService string = "service"
 
 const (
+	ProtoAMQP       = "amqp"
 	ProtoDNS        = "dns"
 	ProtoDHCP       = "dhcp"
 	ProtoDiameter   = "diameter"
@@ -113,6 +114,10 @@ func (e Service) Type() string { return TypeService }
 
 func (e Service) Metadata() Metadata {
 	switch e.Protocol {
+	case ProtoAMQP:
+		var p ServiceAMQP
+		_ = json.Unmarshal(e.Raw, &p)
+		return p
 	case ProtoElasticsearch:
 		var p ServiceElasticsearch
 		_ = json.Unmarshal(e.Raw, &p)
@@ -359,6 +364,15 @@ type Service struct {
 	Version   string          `json:"version,omitempty"`
 	Raw       json.RawMessage `json:"metadata"`
 }
+
+type ServiceAMQP struct {
+	Product  string   `json:"product,omitempty"`
+	Version  string   `json:"version,omitempty"`
+	Platform string   `json:"platform,omitempty"`
+	CPEs     []string `json:"cpes,omitempty"`
+}
+
+func (e ServiceAMQP) Type() string { return ProtoAMQP }
 
 type ServiceHTTP struct {
 	Status          string      `json:"status"`     // e.g. "200 OK"

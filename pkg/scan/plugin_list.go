@@ -18,6 +18,7 @@ package scan
 // When a new plugin is added, this list should be updated.
 
 import (
+	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/amqp"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/cassandra"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/chromadb"
 	_ "github.com/praetorian-inc/fingerprintx/pkg/plugins/services/couchdb"
