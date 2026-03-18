@@ -31,3 +31,4 @@ go.work
 /bin/
 /dist/
 coverage.html
+.claude/
