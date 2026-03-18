@@ -45,7 +45,7 @@ func TestVNC(t *testing.T) {
 			t.Parallel()
 			err := test.RunTest(t, tc, p)
 			if err != nil {
-				t.Errorf(err.Error())
+				t.Errorf("%s", err.Error())
 			}
 		})
 	}
