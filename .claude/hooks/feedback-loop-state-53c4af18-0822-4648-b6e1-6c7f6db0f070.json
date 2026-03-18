@@ -1,0 +1,28 @@
+{
+  "active": true,
+  "started_at": "2026-03-18T02:21:55Z",
+  "iteration": 1,
+  "modified_domains": [
+    "backend"
+  ],
+  "domain_phases": {
+    "backend": {
+      "review": {
+        "status": "NOT_RUN",
+        "agent": null,
+        "issues": []
+      },
+      "test_planning": {
+        "status": "NOT_RUN",
+        "agent": null
+      },
+      "testing": {
+        "status": "NOT_RUN",
+        "agent": null,
+        "issues": []
+      }
+    }
+  },
+  "consecutive_review_failures": 0,
+  "consecutive_test_failures": 0
+}

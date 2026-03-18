@@ -1,0 +1,18 @@
+{
+  "frontend": [],
+  "backend": [
+    "/Users/matthewjackoski/dev/fingerprintx/pkg/plugins/services/telnet/telnet_test.go",
+    "/Users/matthewjackoski/dev/fingerprintx/pkg/plugins/services/vnc/vnc_test.go"
+  ],
+  "capabilities": [],
+  "mcp_tools": [],
+  "integrations": [],
+  "skills": [],
+  "other": [
+    "/Users/matthewjackoski/dev/fingerprintx/Makefile",
+    "/Users/matthewjackoski/dev/fingerprintx/.github/workflows/ci.yml",
+    "/Users/matthewjackoski/dev/fingerprintx/.github/workflows/build.yml",
+    "/Users/matthewjackoski/dev/fingerprintx/.github/workflows/release.yml",
+    "/Users/matthewjackoski/dev/fingerprintx/.gitignore"
+  ]
+}
