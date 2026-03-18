@@ -26,3 +26,8 @@ go.work
 
 # Fingerprintx binary
 /fingerprintx
+
+# Build artifacts
+/bin/
+/dist/
+coverage.html

@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag for the build (e.g., v1.0.0)'
+        required: false
+        default: 'dev'
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build all platforms
+        run: make release VERSION=${{ github.event.inputs.version }}
+
+      - name: Generate checksums
+        run: cd dist && sha256sum * > checksums.txt
+
+      - name: Upload Linux amd64
+        uses: actions/upload-artifact@v6
+        with:
+          name: fingerprintx-linux-amd64
+          path: dist/fingerprintx-linux-amd64
+
+      - name: Upload Linux arm64
+        uses: actions/upload-artifact@v6
+        with:
+          name: fingerprintx-linux-arm64
+          path: dist/fingerprintx-linux-arm64
+
+      - name: Upload macOS amd64
+        uses: actions/upload-artifact@v6
+        with:
+          name: fingerprintx-darwin-amd64
+          path: dist/fingerprintx-darwin-amd64
+
+      - name: Upload macOS arm64
+        uses: actions/upload-artifact@v6
+        with:
+          name: fingerprintx-darwin-arm64
+          path: dist/fingerprintx-darwin-arm64
+
+      - name: Upload Windows amd64
+        uses: actions/upload-artifact@v6
+        with:
+          name: fingerprintx-windows-amd64
+          path: dist/fingerprintx-windows-amd64.exe
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v6
+        with:
+          name: checksums
+          path: dist/checksums.txt
