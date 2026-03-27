@@ -26,6 +26,14 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Run vet
+        run: go vet ./...
+
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
 
