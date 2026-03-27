@@ -41,11 +41,11 @@ jobs:
           name: Release ${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
-            dist/fingerprintx-linux-amd64
-            dist/fingerprintx-linux-arm64
-            dist/fingerprintx-darwin-amd64
-            dist/fingerprintx-darwin-arm64
-            dist/fingerprintx-windows-amd64.exe
+            dist/fingerprintx-linux-amd64.tar.gz
+            dist/fingerprintx-linux-arm64.tar.gz
+            dist/fingerprintx-darwin-amd64.tar.gz
+            dist/fingerprintx-darwin-arm64.tar.gz
+            dist/fingerprintx-windows-amd64.zip
             dist/checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

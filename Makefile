@@ -45,16 +45,22 @@ build-windows: ## Build for Windows (amd64)
 # Release targets (CI/CD)
 # =============================================================================
 
-release: ## Build release binaries for all platforms (outputs to dist/)
-	@mkdir -p $(DIST_DIR)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY_NAME)-linux-amd64 $(CMD_PATH)
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY_NAME)-linux-arm64 $(CMD_PATH)
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64 $(CMD_PATH)
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64 $(CMD_PATH)
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe $(CMD_PATH)
+release: ## Build release tarballs for all platforms (outputs to dist/)
+	@mkdir -p $(DIST_DIR)/staging
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/staging/$(BINARY_NAME) $(CMD_PATH)
+	tar -czf $(DIST_DIR)/$(BINARY_NAME)-linux-amd64.tar.gz -C $(DIST_DIR)/staging $(BINARY_NAME)
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/staging/$(BINARY_NAME) $(CMD_PATH)
+	tar -czf $(DIST_DIR)/$(BINARY_NAME)-linux-arm64.tar.gz -C $(DIST_DIR)/staging $(BINARY_NAME)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/staging/$(BINARY_NAME) $(CMD_PATH)
+	tar -czf $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64.tar.gz -C $(DIST_DIR)/staging $(BINARY_NAME)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/staging/$(BINARY_NAME) $(CMD_PATH)
+	tar -czf $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64.tar.gz -C $(DIST_DIR)/staging $(BINARY_NAME)
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o $(DIST_DIR)/staging/$(BINARY_NAME).exe $(CMD_PATH)
+	cd $(DIST_DIR)/staging && zip ../$(BINARY_NAME)-windows-amd64.zip $(BINARY_NAME).exe
+	rm -rf $(DIST_DIR)/staging
 
-release-checksums: release ## Generate checksums for release binaries
-	cd $(DIST_DIR) && sha256sum * > checksums.txt
+release-checksums: release ## Generate checksums for release archives
+	cd $(DIST_DIR) && sha256sum *.tar.gz *.zip > checksums.txt
 
 # =============================================================================
 # Test targets
